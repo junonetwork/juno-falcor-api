@@ -53,9 +53,9 @@ declare module 'falcor-router' {
 
   export type Route<P extends PathSet = PathSet, C = Router> = GetRoute<P, C> | SetRoute<C> | CallRoute<P, C>;
 
-  export type Primitive = string | boolean | number | undefined;
+  export type Primitive = string | boolean | number | undefined | null;
 
-  export type Atom<T = any> = { $type: 'atom', value: T, $lang?: string, $dataType?: string }
+  export type Atom<T = any> = { $type: 'atom', value: T, $language?: string, $dataType?: string }
 
   export type Ref = { $type: 'ref', value: Path }
 
@@ -63,9 +63,9 @@ declare module 'falcor-router' {
 
   export type Sentinel = Atom | Ref | ErrorSentinel
 
-  export type PathValue = {
+  export type PathValue<Value = any> = {
     path: string | PathSet
-    value: Sentinel | Primitive
+    value: Value | Atom<Value> | Ref | ErrorSentinel
   }
 
   export type StandardRange = {

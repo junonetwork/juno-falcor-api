@@ -1,10 +1,13 @@
 {
-  "name": "graph-falcor-api",
+  "name": "falcor-graph-api",
   "version": "0.0.1",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon src/index.ts",
+    "build": "tsc",
+    "build:tests": "tsc --project tsconfig-test.json",
+    "test": "npm run build:tests && NODE_ENV=test node test_dist/test/ | tap-summary"
   },
   "author": "",
   "license": "ISC",
@@ -22,8 +25,10 @@
     "@types/query-string": "^6.3.0",
     "@types/ramda": "^0.26.8",
     "@types/tape": "^4.2.33",
+    "nodemon": "^1.19.1",
     "tap-summary": "^4.0.0",
     "tape": "^4.10.1",
+    "ts-node": "^8.2.0",
     "typescript": "^3.4.5"
   }
 }

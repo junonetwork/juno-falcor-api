@@ -1,4 +1,8 @@
-import { xprod as ramda_xprod } from "ramda";
+import { xprod as ramda_xprod } from 'ramda'
+import { KeySet, PathValue } from 'falcor-json-graph'
+import { Observable, from } from 'rxjs'
+import { tap, catchError } from 'rxjs/operators'
+import { $error } from './falcor'
 
 export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
   .reduce<Array<[A, B, C]>>((acc, abProd: [A, B]) => {
@@ -6,6 +10,29 @@ export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
     acc.push(...abcProd)
     return acc
   }, [])
+
+export const handleError = (
+  expectedPaths: KeySet[],
+  errorMessage: (err: any) => string = (err: any) => process.env.NODE_ENV === 'development' ? err : 'Error'
+) => (stream$: Observable<PathValue>) => {
+  const seenPaths: Set<KeySet> = new Set()
+
+  return stream$.pipe(
+    tap((pathValue) => seenPaths.add(pathValue.path)),
+    catchError((err) => {
+      console.error(err)
+      const message = errorMessage(err)
+
+      return from(expectedPaths
+        .filter((path) => !seenPaths.has(path))
+        .map((path) => ({
+          path,
+          value: $error('500', message)
+        }))
+      )
+    })
+  )
+}
 
 /**
  * [graph, "search", search]

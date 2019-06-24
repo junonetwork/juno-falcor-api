@@ -1,6 +1,6 @@
 import express from 'express'
 import { dataSourceRoute } from 'falcor-express'
-import FalcorRouter from './falcor';
+import FalcorRouter from './falcor'
 
 
 const PORT = process.env.PORT || 3000

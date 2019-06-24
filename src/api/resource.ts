@@ -1,9 +1,9 @@
-import { from, Observable, merge } from "rxjs";
-import { delay, mergeMap } from "rxjs/operators";
-import { MergedResourceRequest } from "./index";
-import { ranges2List, $atom, $ref } from "../utils/falcor";
-import { PathValue } from "falcor-router";
-import { xprod, groupBy } from "ramda";
+import { from, Observable, merge } from 'rxjs'
+import { delay, mergeMap } from 'rxjs/operators'
+import { MergedResourceRequest } from './index'
+import { ranges2List, $atom, $ref } from '../utils/falcor'
+import { PathValue } from 'falcor-router'
+import { xprod, groupBy } from 'ramda'
 
 
 const COUNTRIES = {

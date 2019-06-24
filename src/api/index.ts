@@ -60,32 +60,6 @@ const mergeResourceRequests = reduce<ResourceRequest | ResourceCountRequest, Mer
   {}
 )
 
-// const mergeResourceRequests = reduce<ResourceRequest | ResourceCountRequest, MergedResourceRequest>(
-//   (grouped, req) => {
-//     req.resourceTypes.forEach((resourceType) => {
-//       if (grouped[resourceType] === undefined) {
-//         grouped[resourceType] = {
-//           resources: [],
-//           fields: [],
-//           ranges: [],
-//           count: false
-//         }
-//       }
-
-//       if (req.type === 'resource') {
-//         // TODO - should these be Sets?
-//         grouped[resourceType].resources = uniq(grouped[resourceType].resources.concat(...req.resources))
-//         grouped[resourceType].fields = uniq(grouped[resourceType].fields.concat(...req.fields))
-//         // TODO - merge ranges, rather than simply concatenating
-//         grouped[resourceType].ranges = uniq(grouped[resourceType].ranges.concat(...req.ranges))
-//       } else if (req.type === 'resource-count') {
-//         grouped[resourceType].count = true
-//       }
-//     })
-//     return grouped
-//   },
-//   {}
-// )
 
 export default ({
   searchHandler,

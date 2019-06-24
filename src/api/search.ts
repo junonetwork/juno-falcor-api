@@ -1,9 +1,9 @@
-import { MergedSearchRequest } from "./index";
-import { of, Observable } from "rxjs";
-import { $error, ranges2List, $ref } from "../utils/falcor";
-import { delay } from "rxjs/operators";
-import { parseSearch } from "../utils/search";
-import { PathValue } from "falcor-router";
+import { MergedSearchRequest } from './index'
+import { of, Observable } from 'rxjs'
+import { $error, ranges2List, $ref } from '../utils/falcor'
+import { delay } from 'rxjs/operators'
+import { parseSearch } from '../utils/search'
+import { PathValue } from 'falcor-router'
 
 
 export default ({ searchId, ranges, count }: MergedSearchRequest): Observable<PathValue> => {

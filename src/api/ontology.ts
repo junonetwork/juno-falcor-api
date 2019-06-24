@@ -1,7 +1,7 @@
-import { PathValue, Atom, Ref } from "falcor-router";
-import { of, Observable, from } from "rxjs";
-import { $ref, $atom } from "../utils/falcor";
-import { map, mergeMap } from "rxjs/operators";
+import { PathValue, Atom, Ref } from 'falcor-router'
+import { of, Observable, from } from 'rxjs'
+import { $ref, $atom } from '../utils/falcor'
+import { map, mergeMap } from 'rxjs/operators'
 
 
 const TYPES_LIST = ['company', 'person']

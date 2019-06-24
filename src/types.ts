@@ -4,6 +4,6 @@ export type Search = {
   type: string
 }
 
-export type Count = number | { $type: 'count', value: number, qualifier: 'eq' | 'lt' | 'gt' | 'approximate' }
+export type Count = number | { count: number, qualifier: 'eq' | 'lt' | 'gt' | 'gte' | 'lte' | 'approximate' }
 
 export type Label = string | { label: string, language: string } | Array<{ label: string, language: string }>

@@ -5,7 +5,7 @@ import Api, { ApiHandlers } from './api/index'
 import searchHandler from './api/search'
 import resourceHandler from './api/resource'
 import { graphTypeList, graphTypeValue, graphFieldValue } from './api/ontology'
-import { logError } from './utils/rxjs';
+import { logError } from './utils/rxjs'
 
 
 const BaseRouter = Router.createClass([

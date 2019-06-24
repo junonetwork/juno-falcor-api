@@ -1,5 +1,5 @@
-import { Subject, throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { Subject, throwError } from 'rxjs'
+import { catchError } from 'rxjs/operators'
 
 export const fromHandler = <T>(): { handler: (data: T) => void, stream: Subject<T> } => {
   const stream = new Subject<T>()

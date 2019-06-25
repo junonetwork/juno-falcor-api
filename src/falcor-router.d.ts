@@ -1,5 +1,5 @@
 declare module 'falcor-router' {
-  import { DataSource } from 'falcor';
+  // import { DataSource } from 'falcor';
   import {
     PathSet,
     InvalidPath,
@@ -14,6 +14,23 @@ declare module 'falcor-router' {
     debug?: boolean;
     maxPaths?: number;
     maxRefFollow?: number;
+  }
+
+  export class DataSource {
+    /**
+     * The get method retrieves values from the DataSource's associated JSONGraph object.
+     */
+    get(pathSets: PathSet[]): Observable<JSONGraphEnvelope>;
+
+    /**
+     * The set method accepts values to set in the DataSource's associated JSONGraph object.
+     */
+    set(jsonGraphEnvelope: JSONGraphEnvelope): Observable<JSONGraphEnvelope>;
+
+    /**
+     * Invokes a function in the DataSource's JSONGraph object.
+     */
+    call(functionPath: Path, args?: any[], refSuffixes?: PathSet[], thisPaths?: PathSet[]): Observable<JSONGraphEnvelope>;
   }
 
   export default class AbstractRouter extends DataSource {

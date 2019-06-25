@@ -13,7 +13,7 @@ const COUNTRIES = {
 }
 
 export default (request: MergedResourceRequest): Observable<PathValue> => {
-  console.log('side effect resource api call', request)
+  // console.log('side effect resource api call', request)
 
   /**
    * map resource type to backing service

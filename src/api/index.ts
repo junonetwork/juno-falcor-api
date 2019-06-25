@@ -6,8 +6,10 @@ import {
   toArray,
   multicast,
   refCount,
+  tap,
 } from 'rxjs/operators'
 import { map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo } from 'ramda';
+import { MetricEvent, event } from '../metrics';
 
 
 export type SearchRequest = { type: 'search', searchId: string, ranges: StandardRange[] }
@@ -19,8 +21,8 @@ export type ResourceRequestByType = { resources: string[], fields: string[], ran
 export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
 
 export type ApiHandlers = {
-  search: (req: SearchRequest | SearchCountRequest) => Observable<PathValue>
-  resource: (req: ResourceRequest | ResourceCountRequest) => Observable<PathValue>
+  search: (req: SearchRequest | SearchCountRequest, metricEventHandler: (event: MetricEvent) => void) => Observable<PathValue>
+  resource: (req: ResourceRequest | ResourceCountRequest, metricEventHandler: (event: MetricEvent) => void) => Observable<PathValue>
 }
 
 const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountRequest>) => MergedSearchRequest[] = pipe(
@@ -75,12 +77,14 @@ export default ({
   let resourceResponse$: Observable<PathValue> | undefined
 
   return {
-    search: (req: SearchRequest | SearchCountRequest) => {
+    search: (req: SearchRequest | SearchCountRequest, metricEventHandler: (event: MetricEvent) => void) => {
+      // TODO - move batching to a util
       if (searchRequest$ === undefined) {
         searchRequest$ = new ReplaySubject<SearchRequest | SearchCountRequest>()
         searchResponse$ = searchRequest$.pipe(
           toArray(),
           mergeMap((reqs) => from(mergeSearchRequests(reqs))),
+          tap(() => metricEventHandler(event('resourceRequest'))),
           mergeMap(searchHandler),
           multicast(new Subject()),
           refCount(),
@@ -96,12 +100,13 @@ export default ({
       searchRequest$.next(req)
       return searchResponse$!
     },
-    resource: (req: ResourceRequest | ResourceCountRequest) => {
+    resource: (req: ResourceRequest | ResourceCountRequest, metricEventHandler: (event: MetricEvent) => void) => {
       if (resourceRequest$ === undefined) {
         resourceRequest$ = new ReplaySubject<ResourceRequest | ResourceCountRequest>()
         resourceResponse$ = resourceRequest$.pipe(
           toArray(),
-          mapRx(mergeResourceRequests),
+          mapRx((reqs) => mergeResourceRequests(reqs)),
+          tap(() => metricEventHandler(event('resourceRequest'))),
           mergeMap(resourceHandler),
           multicast(new Subject()),
           refCount(),

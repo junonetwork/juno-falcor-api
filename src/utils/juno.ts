@@ -1,7 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { KeySet, PathValue } from 'falcor-json-graph'
 import { Observable, from, Subject, ReplaySubject } from 'rxjs'
-import { tap, catchError, toArray, map, mergeMap, multicast, refCount } from 'rxjs/operators'
+import { tap, catchError, toArray, map, mergeMap, multicast, refCount, bufferTime, buffer, first, mergeAll, take, switchAll } from 'rxjs/operators'
 import { $error } from './falcor'
 
 
@@ -82,18 +82,21 @@ export const resourceFieldLengthPath = (graph: string, type: string, resource: s
 export const batch = <Request, Merged>(
   merge: (reqs: Request[]) => Merged,
   handler: (mergedRequests: Merged) => Observable<PathValue>,
+  tapMergedRequests: (mergedRequests: Merged) => void = noop
 ) => {
   let request$: Subject<Request> | undefined
   let response$: Observable<PathValue> | undefined
 
-  return (req: Request, tapMergedRequests: (mergedRequests: Merged) => void = noop) => {
+  return (req: Request): Observable<PathValue> => {
     if (request$ === undefined) {
       request$ = new ReplaySubject<Request>()
       response$ = request$.pipe(
         toArray(),
-        map(merge),
-        tap((mergedRequests) => tapMergedRequests(mergedRequests)),
-        mergeMap(handler),
+        mergeMap((reqs) => {
+          const merged = merge(reqs)
+          tapMergedRequests(merged)
+          return handler(merged)
+        }),
         multicast(new Subject()),
         refCount(),
       )
@@ -109,3 +112,25 @@ export const batch = <Request, Merged>(
     return response$!
   }
 }
+
+// export const batch2 = <Request, Merged>(
+//   merge: (reqs: Request[]) => Merged,
+//   handler: (mergedRequests: Merged) => Observable<PathValue>,
+// ) => {
+//   const request$ = new Subject<Request>()
+//   const batchedRequest$ = request$.pipe(bufferTime(0))
+
+//   return (req: Request, tapMergedRequests: (mergedRequests: Merged) => void = noop): Observable<PathValue> => {
+//     request$.next(req)
+
+//     return batchedRequest$.pipe(
+//       take(1),
+//       map((reqs) => {
+//         const merged = merge(reqs)
+//         tapMergedRequests(merged)
+//         return handler(merged)
+//       }),
+//       switchAll()
+//     )
+//   }
+// }

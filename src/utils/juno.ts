@@ -1,8 +1,12 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { KeySet, PathValue } from 'falcor-json-graph'
-import { Observable, from } from 'rxjs'
-import { tap, catchError } from 'rxjs/operators'
+import { Observable, from, Subject, ReplaySubject } from 'rxjs'
+import { tap, catchError, toArray, map, mergeMap, multicast, refCount } from 'rxjs/operators'
 import { $error } from './falcor'
+
+
+export const noop = () => {}
+
 
 export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
   .reduce<Array<[A, B, C]>>((acc, abProd: [A, B]) => {
@@ -10,6 +14,7 @@ export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
     acc.push(...abcProd)
     return acc
   }, [])
+
 
 export const handleError = (
   expectedPaths: KeySet[],
@@ -33,6 +38,7 @@ export const handleError = (
     })
   )
 }
+
 
 /**
  * [graph, "search", search]
@@ -71,3 +77,35 @@ export const resourceFieldValuePath = (graph: string, type: string, resource: st
  * ["juno", "resource", "person", "_1", "name", "length"]
  */
 export const resourceFieldLengthPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field, 'length']
+
+
+export const batch = <Request, Merged>(
+  merge: (reqs: Request[]) => Merged,
+  handler: (mergedRequests: Merged) => Observable<PathValue>,
+) => {
+  let request$: Subject<Request> | undefined
+  let response$: Observable<PathValue> | undefined
+
+  return (req: Request, tapMergedRequests: (mergedRequests: Merged) => void = noop) => {
+    if (request$ === undefined) {
+      request$ = new ReplaySubject<Request>()
+      response$ = request$.pipe(
+        toArray(),
+        map(merge),
+        tap((mergedRequests) => tapMergedRequests(mergedRequests)),
+        mergeMap(handler),
+        multicast(new Subject()),
+        refCount(),
+      )
+
+      setTimeout(() => {
+        request$!.complete()
+        request$ = undefined
+        response$ = undefined
+      }, 0)
+    }
+
+    request$.next(req)
+    return response$!
+  }
+}

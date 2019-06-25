@@ -1,31 +1,26 @@
 import { StandardRange, PathValue } from 'falcor-router'
-import { from, Observable, pipe, Subject, ReplaySubject } from 'rxjs'
-import {
-  mergeMap,
-  map as mapRx,
-  toArray,
-  multicast,
-  refCount,
-  tap,
-} from 'rxjs/operators'
+import { Observable, pipe } from 'rxjs'
 import { map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo } from 'ramda';
-import { MetricEvent, event } from '../metrics';
+import searchHandler from './search'
+import resourceHandler from './resource'
+import { batch } from '../utils/juno';
 
 
 export type SearchRequest = { type: 'search', searchId: string, ranges: StandardRange[] }
 export type SearchCountRequest = { type: 'search-count', searchId: string }
 export type ResourceRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
 export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], resources: string[], fields: string[] }
-export type MergedSearchRequest = { searchId: string, ranges: StandardRange[], count: boolean }
+export type MergedSearchRequest = Array<{ searchId: string, ranges: StandardRange[], count: boolean }>
 export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean}
 export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
 
 export type ApiHandlers = {
-  search: (req: SearchRequest | SearchCountRequest, metricEventHandler: (event: MetricEvent) => void) => Observable<PathValue>
-  resource: (req: ResourceRequest | ResourceCountRequest, metricEventHandler: (event: MetricEvent) => void) => Observable<PathValue>
+  search: (req: SearchRequest | SearchCountRequest, metricEventHandler: () => void) => Observable<PathValue>
+  resource: (req: ResourceRequest | ResourceCountRequest, metricEventHandler: () => void) => Observable<PathValue>
 }
 
-const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountRequest>) => MergedSearchRequest[] = pipe(
+
+const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountRequest>) => MergedSearchRequest = pipe(
   groupBy<SearchRequest | SearchCountRequest>(prop('searchId')),
   values,
   map((reqs) => ({
@@ -63,64 +58,7 @@ const mergeResourceRequests = reduce<ResourceRequest | ResourceCountRequest, Mer
 )
 
 
-export default ({
-  searchHandler,
-  resourceHandler,
-}: {
-  searchHandler: (req: MergedSearchRequest) => Observable<PathValue>,
-  resourceHandler: (req: MergedResourceRequest) => Observable<PathValue>,
-}): ApiHandlers => {
-  let searchRequest$: Subject<SearchRequest | SearchCountRequest> | undefined
-  let searchResponse$: Observable<PathValue> | undefined
-
-  let resourceRequest$: Subject<ResourceRequest | ResourceCountRequest> | undefined
-  let resourceResponse$: Observable<PathValue> | undefined
-
-  return {
-    search: (req: SearchRequest | SearchCountRequest, metricEventHandler: (event: MetricEvent) => void) => {
-      // TODO - move batching to a util
-      if (searchRequest$ === undefined) {
-        searchRequest$ = new ReplaySubject<SearchRequest | SearchCountRequest>()
-        searchResponse$ = searchRequest$.pipe(
-          toArray(),
-          mergeMap((reqs) => from(mergeSearchRequests(reqs))),
-          tap(() => metricEventHandler(event('resourceRequest'))),
-          mergeMap(searchHandler),
-          multicast(new Subject()),
-          refCount(),
-        )
-  
-        setTimeout(() => {
-          searchRequest$!.complete()
-          searchRequest$ = undefined
-          searchResponse$ = undefined
-        }, 0)
-      }
-  
-      searchRequest$.next(req)
-      return searchResponse$!
-    },
-    resource: (req: ResourceRequest | ResourceCountRequest, metricEventHandler: (event: MetricEvent) => void) => {
-      if (resourceRequest$ === undefined) {
-        resourceRequest$ = new ReplaySubject<ResourceRequest | ResourceCountRequest>()
-        resourceResponse$ = resourceRequest$.pipe(
-          toArray(),
-          mapRx((reqs) => mergeResourceRequests(reqs)),
-          tap(() => metricEventHandler(event('resourceRequest'))),
-          mergeMap(resourceHandler),
-          multicast(new Subject()),
-          refCount(),
-        )
-  
-        setTimeout(() => {
-          resourceRequest$!.complete()
-          resourceRequest$ = undefined
-          resourceResponse$ = undefined
-        }, 0)
-      }
-  
-      resourceRequest$.next(req)
-      return resourceResponse$!
-    }
-  }
-}
+export default (): ApiHandlers => ({
+  search: batch(mergeSearchRequests, searchHandler),
+  resource: batch(mergeResourceRequests, resourceHandler),
+})

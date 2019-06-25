@@ -1,8 +1,8 @@
-import { pipe, map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo } from 'ramda'
+import { pipe, map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo, xprod } from 'ramda'
 import Router, { StandardRange, PathValue } from 'falcor-router'
 import { PathSet, DataSource } from 'falcor'
 import { from, Observable } from 'rxjs'
-import { mergeMap, bufferTime } from 'rxjs/operators'
+import { map as mapRx, mergeMap, bufferTime } from 'rxjs/operators'
 import searchHandler from './search'
 import resourceHandler from './resource'
 import { graphTypeList, graphTypeValue, graphFieldValue, graphTypeValueLength, graphFieldValueLength } from './ontology'
@@ -63,6 +63,28 @@ const BaseRouter = Router.createClass([
     route: 'juno.resource[{keys}][{keys}][{keys}].length',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields]: [null, null, string[], string[], string[]]) {
       return this.resource({ type: 'resource-count', resourceTypes, resources, fields }).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource[{keys}][{keys}].id',
+    get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
+      return from(xprod(resourceTypes, resources)).pipe(
+        mapRx(([type, id]) => ({
+          path: ['juno', 'resource', type, id, 'id'],
+          value: id,
+        }))
+      )
+    },
+  },
+  {
+    route: 'juno.resource[{keys}][{keys}].type',
+    get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
+      return from(xprod(resourceTypes, resources)).pipe(
+        mapRx(([type, id]) => ({
+          path: ['juno', 'resource', type, id, 'id'],
+          value: type,
+        }))
+      )
     },
   },
   /**

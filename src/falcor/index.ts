@@ -5,10 +5,11 @@ import { from, Observable } from 'rxjs'
 import { mergeMap, bufferTime } from 'rxjs/operators'
 import searchHandler from './search'
 import resourceHandler from './resource'
-import { graphTypeList, graphTypeValue, graphFieldValue } from './ontology'
+import { graphTypeList, graphTypeValue, graphFieldValue, graphTypeValueLength, graphFieldValueLength } from './ontology'
 import { logError } from '../utils/rxjs'
 import { metrics, MetricHandlers, MetricEvent, logger, instrument, event } from '../metrics'
 import { batch } from '../utils/juno'
+import { countriesValue, countriesValueLength } from './countries';
 
 
 export type SearchRequest = { type: 'search', searchId: string, ranges: StandardRange[] }
@@ -26,8 +27,11 @@ type IFalcorRouter = {
 
 
 const BaseRouter = Router.createClass([
+  /**
+   * Search Routes
+   */
   {
-    route: 'juno.search[{keys}][{ranges}]',
+    route: 'juno.search[{keys}][{ranges}]["value", "qualifier"]',
     get(this: IFalcorRouter, [_, __, searches, ranges]: [null, null, string[], StandardRange[]]) {
       return from(searches).pipe(
         mergeMap((searchId) => this.search({ type: 'search', searchId, ranges })),
@@ -46,8 +50,11 @@ const BaseRouter = Router.createClass([
       )
     }
   },
+  /**
+   * Resource Routes
+   */
   {
-    route: 'juno.resource[{keys}][{keys}][{keys}][{ranges}]',
+    route: 'juno.resource[{keys}][{keys}][{keys}][{ranges}]["value", "qualifier"]',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields, ranges]: [null, null, string[], string[], string[], StandardRange[]]) {
       return this.resource({ type: 'resource', resourceTypes, resources, fields, ranges }).pipe(logError, bufferTime(0))
     },
@@ -58,23 +65,59 @@ const BaseRouter = Router.createClass([
       return this.resource({ type: 'resource-count', resourceTypes, resources, fields }).pipe(logError, bufferTime(0))
     },
   },
+  /**
+   * Country Resource Routes
+   */
+  {
+    route: 'juno.resource.country[{keys}][{keys}][{integers}].value',
+    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], ('label' | 'range')[], number[]]) {
+      return countriesValue(ids, fields, indices).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.country[{keys}][{keys}].length',
+    get([_, __, ___, ids, fields]: [null, null, null, string[], ('label' | 'range')[]]) {
+      return countriesValueLength(ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  /**
+   * Type Resource Routes
+   */
+  {
+    route: 'juno.resource.type[{keys}]["label", "field"][{integers}].value',
+    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
+      return graphTypeValue(ids, fields, indices).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.type[{keys}]["label", "field"].length',
+    get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
+      return graphTypeValueLength(ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  /**
+   * Feild Resource Routes
+   */
+  {
+    route: 'juno.resource.field[{keys}]["label", "range"][{integers}].value',
+    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], ('label' | 'range')[], number[]]) {
+      return graphFieldValue(ids, fields, indices).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.field[{keys}]["label", "range"].length',
+    get([_, __, ___, ids, fields]: [null, null, null, string[], ('label' | 'range')[]]) {
+      return graphFieldValueLength(ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  /**
+   * Graph Type Routes
+   */
   {
     route: 'juno.types[{keys}]',
-    get([_, __, indicesOrLength]: [null, null, (string | number)[]]) {
+    get([_, __, indicesOrLength]: [null, null, ('length' | number)[]]) {
       return graphTypeList(indicesOrLength).pipe(logError, bufferTime(0))
     }
-  },
-  {
-    route: 'juno.resource.type[{keys}]["label", "field"][{keys}]',
-    get([_, __, ___, ids, fields, indicesOrLength]: [null, null, null, string[], ('label' | 'field')[], (string | number)[]]) {
-      return graphTypeValue(ids, fields, indicesOrLength).pipe(logError, bufferTime(0))
-    },
-  },
-  {
-    route: 'juno.resource.field[{keys}]["label", "range"][{keys}]',
-    get([_, __, ___, ids, fields, indicesOrLength]: [null, null, null, string[], ('label' | 'range')[], (string | number)[]]) {
-      return graphFieldValue(ids, fields, indicesOrLength).pipe(logError, bufferTime(0))
-    },
   },
 ])
 

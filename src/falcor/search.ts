@@ -4,6 +4,7 @@ import { $error, ranges2List, $ref } from '../utils/falcor'
 import { delay, mergeMap } from 'rxjs/operators'
 import { parseSearch } from '../utils/search'
 import { PathValue } from 'falcor-router'
+import { searchPath, searchResultPath } from '../utils/juno';
 
 
 export default (merged: MergedSearchRequest): Observable<PathValue> => from(merged).pipe(
@@ -12,13 +13,13 @@ export default (merged: MergedSearchRequest): Observable<PathValue> => from(merg
   
     if (search === undefined) {
       return of({
-        path: ['juno', 'search', searchId],
+        path: searchPath('juno', searchId),
         value: $error('422', 'Malformed Search Request')
       })
     }
   
     const searchResults = ranges2List(ranges).map((index) => ({
-      path: ['juno', 'search', searchId, index],
+      path: searchResultPath('juno', searchId, index),
       value: $ref(['juno', 'resource', search.type, `_${index}`])
     }))
   

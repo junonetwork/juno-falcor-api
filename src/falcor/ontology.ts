@@ -2,36 +2,37 @@ import { PathValue, Atom, Ref } from 'falcor-router'
 import { of, Observable, from } from 'rxjs'
 import { $ref, $atom } from '../utils/falcor'
 import { map, mergeMap } from 'rxjs/operators'
+import { resourceFieldLengthPath, resourceFieldValuePath, resourceFieldPath, resourcePath } from '../utils/juno';
 
 
 const TYPES_LIST = ['company', 'person']
 const TYPES: {
   [id: string]: {
-    label: string[],
-    field: string[]
+    label: (string | Atom)[],
+    field: Ref[],
   }
 } = {
   company: {
     label: ['Company'],
-    field: ['name', 'shareholderOf', 'hasShareholder'],
+    field: [$ref(['juno', 'resource', 'field', 'name']), $ref(['juno', 'resource', 'field', 'shareholderOf']), $ref(['juno', 'resource', 'field', 'hasShareholder'])],
   },
   person: {
     label: ['Person'],
-    field: ['name', 'birthDate', 'shareholderOf', 'nationality'],
+    field: [$ref(['juno', 'resource', 'field', 'name']), $ref(['juno', 'resource', 'field', 'birthDate']), $ref(['juno', 'resource', 'field', 'shareholderOf']), $ref(['juno', 'resource', 'field', 'nationality'])],
   },
   country: {
     label: ['Country'],
-    field: ['name'],
+    field: [$ref(['juno', 'resource', 'field', 'name'])],
   }
 }
 const FIELDS: {
   [id: string]: {
-    label: (string | { label: string, language: string })[],
-    range: (Atom | Ref)[]
+    label: (string | Atom)[],
+    range: (string | Atom | Ref)[],
   }
 } = {
   name: {
-    label: ['name', { label: 'nombre', language: 'es' }],
+    label: ['Name', $atom('Nombre', { language: 'es'})],
     range: [$atom('string')],
   },
   shareholderOf: {
@@ -73,55 +74,33 @@ export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<
   })
 )
 
-export const graphTypeValue = (ids: string[], fields: ('label' | 'field')[], indicesOrLength: (string | number)[]): Observable<PathValue> => from(ids).pipe(
+export const graphTypeValue = (ids: string[], fields: string[], indices: number[]): Observable<PathValue> => from(ids).pipe(
   mergeMap((id) => {
     if (TYPES[id] === undefined) {
       return of({
-        path: ['juno', 'resource', 'type', id],
+        path: resourcePath('juno', 'type', id),
         value: null,
       })
     }
 
     return from(fields).pipe(
-      mergeMap((field) => from(indicesOrLength).pipe(
-        map((indexOrLength) => {
-          if (field === 'label') {
-            if (indexOrLength === 'length') {
-              return {
-                path: ['juno', 'resource', 'type', id, 'label', 'length'],
-                value: TYPES[id].label.length
-              }
-            } else if (TYPES[id].label[indexOrLength] !== undefined) {
-              return {
-                path: ['juno', 'resource', 'type', id, 'label', indexOrLength],
-                value: TYPES[id].label[indexOrLength]
-              }
-            }
+      mergeMap((field) => from(indices).pipe(
+        map((index) => {
+          if (TYPES[id][field] === undefined) {
             return {
-              path: ['juno', 'resource', 'type', id, 'label', indexOrLength],
+              path: resourceFieldPath('juno', 'type', id, field),
               value: null
             }
-          } else if (field === 'field') {
-            if (indexOrLength === 'length') {
-              return {
-                path: ['juno', 'resource', 'type', id, 'field', 'length'],
-                value: TYPES[id].field.length
-              }
-            } else if (TYPES[id].field[indexOrLength] !== undefined) {
-              return {
-                path: ['juno', 'resource', 'type', id, 'field', indexOrLength],
-                value: $ref(['juno', 'resource', 'field', TYPES[id].field[indexOrLength]])
-              }
-            }
+          } else if (TYPES[id][field][index] === undefined) {
             return {
-              path: ['juno', 'resource', 'type', id, 'field', indexOrLength],
+              path: resourceFieldValuePath('juno', 'type', id, field, index),
               value: null
             }
           }
 
           return {
-            path: ['juno', 'resource', 'type', id, field],
-            value: null
+            path: resourceFieldValuePath('juno', 'type', id, field, index),
+            value: TYPES[id][field][index],
           }
         })
       ))
@@ -129,64 +108,90 @@ export const graphTypeValue = (ids: string[], fields: ('label' | 'field')[], ind
   })
 )
 
-export const graphFieldValue = (ids: string[], fields: ('label' | 'range')[], indicesOrLength: (string | number)[]): Observable<PathValue> => from(ids).pipe(
+export const graphTypeValueLength = (ids: string[], fields: string[]): Observable<PathValue> => from(ids).pipe(
   mergeMap((id) => {
-    if (FIELDS[id] === undefined) {
+    if (TYPES[id] === undefined) {
       return of({
-        path: ['juno', 'resource', 'field', id],
+        path: resourcePath('juno', 'type', id),
         value: null,
       })
     }
 
     return from(fields).pipe(
-      mergeMap((field) => from(indicesOrLength).pipe(
-        map((indexOrLength) => {
-          if (field === 'label') {
-            if (indexOrLength === 'length') {
-              return {
-                path: ['juno', 'resource', 'field', id, 'label', 'length'],
-                value: FIELDS[id].label.length
-              }
-            } else if (FIELDS[id].label[indexOrLength] !== undefined) {
-              return typeof FIELDS[id].label[indexOrLength] === 'string' ?
-                {
-                  path: ['juno', 'resource', 'field', id, 'label', indexOrLength],
-                  value: FIELDS[id].label[indexOrLength]
-                } : {
-                  path: ['juno', 'resource', 'field', id, 'label', indexOrLength],
-                  value: $atom(FIELDS[id].label[indexOrLength].label, { language: FIELDS[id].label[indexOrLength].language })
-                }
-            }
+      map((field) => {
+        if (TYPES[id][field] === undefined) {
+          return {
+            path: resourceFieldLengthPath('juno', 'type', id, field),
+            value: null
+          }
+        }
 
+        return {
+          path: resourceFieldLengthPath('juno', 'type', id, field),
+          value: TYPES[id][field].length
+        }
+      })
+    )
+  })
+)
+
+export const graphFieldValue = (ids: string[], fields: ('label' | 'range')[], indices: number[]): Observable<PathValue> => from(ids).pipe(
+  mergeMap((id) => {
+    if (FIELDS[id] === undefined) {
+      return of({
+        path: resourcePath('juno', 'field', id),
+        value: null,
+      })
+    }
+
+    return from(fields).pipe(
+      mergeMap((field) => from(indices).pipe(
+        map((index) => {
+          if (FIELDS[id][field] === undefined) {
             return {
-              path: ['juno', 'resource', 'field', id, 'label', indexOrLength],
+              path: resourceFieldPath('juno', 'field', id, field),
               value: null
             }
-          } else if (field === 'range') {
-            if (indexOrLength === 'length') {
-              return {
-                path: ['juno', 'resource', 'field', id, 'range', 'length'],
-                value: FIELDS[id].range.length
-              }
-            } else if (FIELDS[id].range[indexOrLength] !== undefined) {
-              return {
-                path: ['juno', 'resource', 'field', id, 'range', indexOrLength],
-                value: FIELDS[id].range[indexOrLength]
-              }
-            }
-
+          } else if (FIELDS[id][field][index] === undefined) {
             return {
-              path: ['juno', 'resource', 'field', id, 'range', indexOrLength],
+              path: resourceFieldValuePath('juno', 'field', id, field, index),
               value: null
             }
           }
 
           return {
-            path: ['juno', 'resource', 'field', id, field],
-            value: null
+            path: resourceFieldValuePath('juno', 'field', id, 'label', index),
+            value: FIELDS[id][field][index]
           }
         })
       ))
+    )
+  })
+)
+
+export const graphFieldValueLength = (ids: string[], fields: string[]): Observable<PathValue> => from(ids).pipe(
+  mergeMap((id) => {
+    if (FIELDS[id] === undefined) {
+      return of({
+        path: resourcePath('juno', 'field', id),
+        value: null,
+      })
+    }
+
+    return from(fields).pipe(
+      map((field) => {
+        if (FIELDS[id][field] === undefined) {
+          return {
+            path: resourceFieldLengthPath('juno', 'field', id, field),
+            value: null
+          }
+        }
+
+        return {
+          path: resourceFieldLengthPath('juno', 'field', id, field),
+          value: FIELDS[id][field].length
+        }
+      })
     )
   })
 )

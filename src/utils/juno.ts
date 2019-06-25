@@ -1,7 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { KeySet, PathValue } from 'falcor-json-graph'
 import { Observable, from, Subject, ReplaySubject } from 'rxjs'
-import { tap, catchError, toArray, map, mergeMap, multicast, refCount, bufferTime, buffer, first, mergeAll, take, switchAll } from 'rxjs/operators'
+import { tap, catchError, toArray, mergeMap, multicast, refCount } from 'rxjs/operators'
 import { $error } from './falcor'
 
 
@@ -47,32 +47,49 @@ export const handleError = (
  */
 export const searchPath = (graph: string, search: string) => [graph, 'search', search]
 /**
- * [graph, "search", search, index]
- * 
- * ["juno", "search", "type=person", 0]
- */
-export const searchResultPath = (graph: string, search: string, index: number) => [graph, 'search', search, index]
-/**
  * [graph, "search", search, "length"]
  * 
  * ["juno", "search", "type=person", "length"]
  */
 export const searchLengthPath = (graph: string, search: string) => [graph, 'search', search, 'length']
-
 /**
- * [graph, "resource", resource]
+ * [graph, "search", search, index, "value"]
  * 
- * ["juno", "resource", "_1"]
+ * ["juno", "search", "type=person", 0, "value"]
  */
-export const resourcePath = (graph: string, resource: string) => [graph, 'resource', resource]
+export const searchResultPath = (graph: string, search: string, index: number) => [graph, 'search', search, index, 'value']
 /**
- * [graph, "resource", resource, type, resource, field, index]
+ * [graph, "search", search, index, "qualifier"]
  * 
- * ["juno", "resource", "person", "_1", "name", 0]
+ * ["juno", "search", "type=person", 0, "qualifier"]
  */
-export const resourceFieldValuePath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index]
+export const searchResultQualifierPath = (graph: string, search: string, index: number) => [graph, 'search', search, index, 'qualifier']
 /**
- * [graph, "resource", resource, type, resource, field]
+ * [graph, "resource", type, resource]
+ * 
+ * ["juno", "resource", "person", "_1"]
+ */
+export const resourcePath = (graph: string, type: string, resource: string) => [graph, 'resource', type, resource]
+/**
+ * [graph, "resource", type, resource, field]
+ * 
+ * ["juno", "resource", "person", "_1", "name"]
+ */
+export const resourceFieldPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field]
+/**
+ * [graph, "resource", type, resource, resource, field, index, "value"]
+ * 
+ * ["juno", "resource", "person", "_1", "name", 0, "value"]
+ */
+export const resourceFieldValuePath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'value']
+/**
+ * [graph, "resource", type, resource, resource, field, index, "qualifier"]
+ * 
+ * ["juno", "resource", "person", "_1", "name", 0, "qualifier"]
+ */
+export const resourceFieldValueQualifierPath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'qualifier']
+/**
+ * [graph, "resource", type, resource, resource, field]
  * 
  * ["juno", "resource", "person", "_1", "name", "length"]
  */
@@ -113,7 +130,8 @@ export const batch = <Request, Merged>(
   }
 }
 
-// export const batch2 = <Request, Merged>(
+// the above should be possible with a RxJS-only solution
+// export const batch = <Request, Merged>(
 //   merge: (reqs: Request[]) => Merged,
 //   handler: (mergedRequests: Merged) => Observable<PathValue>,
 // ) => {

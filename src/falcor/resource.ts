@@ -1,99 +1,45 @@
-import { from, Observable, merge } from 'rxjs'
+import { from, Observable } from 'rxjs'
 import { delay, mergeMap } from 'rxjs/operators'
 import { MergedResourceRequest } from './index'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
 import { PathValue } from 'falcor-router'
-import { xprod, groupBy } from 'ramda'
+import { xprod } from 'ramda'
+import { resourceFieldValuePath, resourceFieldLengthPath } from '../utils/juno';
 
-
-const COUNTRIES = {
-  gbr: {
-    name: ['United Kingdom']
-  }
-}
 
 export default (request: MergedResourceRequest): Observable<PathValue> => {
-  /**
-   * map resource type to backing service
-   */
-  const { countriesService = [], entitiesService = [] } = groupBy(
-    (type) => {
-      if (type === 'country') {
-        return 'countriesService'
-      } else {
-        return 'entitiesService'
-      }
-    },
-    Object.keys(request)
-  )
-
-  return merge(
-    from(entitiesService).pipe(
+  return from(Object.keys(request)).pipe(
       mergeMap((type) => xprod(request[type].resources, request[type].fields)
         .reduce<PathValue[]>((acc, [resource, field]) => {
           const resourceResult: PathValue[] = field === 'birthDate' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: ['juno', 'resource', type, resource, 'birthDate', index],
-              value: $atom(`1980-10-10`, { dataType: 'date' }),
+              path: resourceFieldValuePath('juno', type, resource, 'birthDate', index),
+              value: index === 0 ? $atom(`1980-10-10`, { dataType: 'date' }) : null,
             })) :
           field === 'shareholderOf' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: ['juno', 'resource', type, resource, 'shareholderOf', index],
-              value: $ref(['juno', 'resource', 'company', `_${index}:shareholder`]),
+              path: resourceFieldValuePath('juno', type, resource, 'shareholderOf', index),
+              value: index < 5 ? $ref(['juno', 'resource', 'company', `_${index}:shareholder`]) : null,
             })) :
           field === 'nationality' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: ['juno', 'resource', type, resource, field, index],
-              value: $ref(['juno', 'resource', 'country', 'gbr']),
+              path: resourceFieldValuePath('juno', type, resource, 'nationality', index),
+              value: index === 0 ? $ref(['juno', 'resource', 'country', 'gbr']) : null,
             })) :
             ranges2List(request[type].ranges).map((index) => ({
-              path: ['juno', 'resource', type, resource, field, index],
+              path: resourceFieldValuePath('juno', type, resource, field, index),
               value: $atom(`${field} value ${index}`),
             }))
 
           acc.push(...resourceResult)
           if (request[type].count) {
             acc.push({
-              path: ['juno', 'resource', type, resource, field, 'length'],
-              value: 5,
+              path: resourceFieldLengthPath('juno', type, resource, field),
+              value: field === 'shareholderOf' ? 5 : 1,
             })
           }
 
           return acc
         }, []))
-    ),
-    from(countriesService).pipe(
-      mergeMap(() => xprod(request.country.resources, request.country.fields)
-        .reduce<PathValue[]>((acc, [resource, field]) => {
-          if (COUNTRIES[resource] === undefined) {
-            acc.push({
-              path: ['juno', 'resource', 'country', resource],
-              value: null
-            })
-            return acc
-          } else if (field !== 'name') {
-            acc.push({
-              path: ['juno', 'resource', 'country', resource, field],
-              value: null
-            })
-            return acc
-          }
-
-          const resourceResults = ranges2List(request.country.ranges).map((index) => ({
-            path: ['juno', 'resource', 'country', resource, 'name', 0],
-            value: COUNTRIES[resource].name[index] === undefined ? null : $atom(COUNTRIES[resource].name[index]),
-          }))
-
-          acc.push(...resourceResults)
-          if (request.country.count) {
-            acc.push({
-              path: ['juno', 'resource', 'country', resource, 'name', 'length'],
-              value: COUNTRIES[resource].name.length,
-            })
-          }
-
-          return acc
-        }, []))
-    )
-  ).pipe(delay(100))
+    ).pipe(delay(100))
 }

@@ -7,7 +7,7 @@ import searchHandler from './search'
 import resourceHandler from './resource'
 import { TYPES, FIELDS, graphTypeList } from './ontology'
 import { logError } from '../utils/rxjs'
-import { metrics, MetricHandlers, MetricEvent, logger, instrument, event } from '../metrics'
+import { metrics, MetricEvent, logger, instrument, event } from '../metrics'
 import { batch } from '../utils/juno'
 import { COUNTRIES } from './countries'
 import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
@@ -218,16 +218,9 @@ const mergeResourceRequests = reduce<ResourceRequest, MergedResourceRequest>(
 
 
 class FalcorRouter extends BaseRouter implements IFalcorRouter {
-  public metrics: MetricHandlers<MetricEvent>
-  public search: (req: SearchRequest | SearchCountRequest) => Observable<PathValue>
-  public resource: (req: ResourceRequest | ResourceCountRequest) => Observable<PathValue>
-
-  constructor() {
-    super()
-    this.metrics = metrics<MetricEvent>(logger)
-    this.search = batch(mergeSearchRequests, searchHandler, () => this.metrics.event(event('searchRequest')))
-    this.resource = batch(mergeResourceRequests, resourceHandler, () => this.metrics.event(event('resourceRequest')))
-  }
+  public metrics = metrics<MetricEvent>(logger)
+  public search = batch(mergeSearchRequests, searchHandler, () => this.metrics.event(event('searchRequest')))
+  public resource = batch(mergeResourceRequests, resourceHandler, () => this.metrics.event(event('resourceRequest')))
 
   get(pathSets: PathSet[]) {
     return from(super.get(pathSets)).pipe(instrument(this.metrics))

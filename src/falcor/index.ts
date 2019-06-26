@@ -1,6 +1,5 @@
 import { pipe, map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo, xprod } from 'ramda'
-import Router, { StandardRange, PathValue } from 'falcor-router'
-import { PathSet, DataSource } from 'falcor'
+import Router, { StandardRange, PathValue, PathSet } from 'falcor-router'
 import { from, Observable } from 'rxjs'
 import { map as mapRx, mergeMap, bufferTime } from 'rxjs/operators'
 import searchHandler from './search'
@@ -227,4 +226,4 @@ class FalcorRouter extends BaseRouter implements IFalcorRouter {
   }
 }
 
-export default () => new FalcorRouter() as any as DataSource
+export default () => new FalcorRouter()

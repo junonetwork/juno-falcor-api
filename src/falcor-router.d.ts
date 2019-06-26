@@ -1,14 +1,22 @@
 declare module 'falcor-router' {
-  // import { DataSource } from 'falcor';
   import {
+    Path,
     PathSet,
     InvalidPath,
     JSONGraph,
     JSONEnvelope,
     JSONGraphEnvelope,
-    Path
   } from 'falcor-json-graph';
   import { Observable } from 'rxjs';
+
+  export {
+    Path,
+    PathSet,
+    InvalidPath,
+    JSONGraph,
+    JSONEnvelope,
+    JSONGraphEnvelope,
+  }
 
   export type RouterOptions = {
     debug?: boolean;

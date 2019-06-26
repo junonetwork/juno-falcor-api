@@ -53,5 +53,5 @@ export default (request: MergedResourceRequest): Observable<PathValue> => from(O
       })
     )
   }),
-  delay(1)
+  delay(0)
 )

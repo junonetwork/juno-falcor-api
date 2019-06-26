@@ -8,23 +8,23 @@ import { searchPath, searchResultPath } from '../utils/juno';
 
 
 export default (merged: MergedSearchRequest): Observable<PathValue> => from(merged).pipe(
-  mergeMap(({ searchId, ranges, count }) => {
-    const search = parseSearch(searchId)
+  mergeMap(({ search, ranges, count }) => {
+    const parsedSearch = parseSearch(search)
   
-    if (search === undefined) {
+    if (parsedSearch === undefined) {
       return of({
-        path: searchPath('juno', searchId),
+        path: searchPath('juno', search),
         value: $error('422', 'Malformed Search Request')
       })
     }
   
     const searchResults = ranges2List(ranges).map((index) => ({
-      path: searchResultPath('juno', searchId, index),
-      value: $ref(['juno', 'resource', search.type, `_${index}`])
+      path: searchResultPath('juno', search, index),
+      value: $ref(['juno', 'resource', parsedSearch.type, `_${index}`])
     }))
   
     const countResults = count ? [{
-      path: ['juno', 'search', searchId, 'length'],
+      path: ['juno', 'search', search, 'length'],
       value: 100
     }] : []
   

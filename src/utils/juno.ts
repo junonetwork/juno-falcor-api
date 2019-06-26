@@ -77,23 +77,29 @@ export const resourcePath = (graph: string, type: string, resource: string) => [
  */
 export const resourceFieldPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field]
 /**
- * [graph, "resource", type, resource, resource, field, index, "value"]
+ * [graph, "resource", type, resource, field, index, "value"]
  * 
  * ["juno", "resource", "person", "_1", "name", 0, "value"]
  */
 export const resourceFieldValuePath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'value']
 /**
- * [graph, "resource", type, resource, resource, field, index, "qualifier"]
+ * [graph, "resource", type, resource, field, index, "qualifier"]
  * 
  * ["juno", "resource", "person", "_1", "name", 0, "qualifier"]
  */
 export const resourceFieldValueQualifierPath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'qualifier']
 /**
- * [graph, "resource", type, resource, resource, field]
+ * [graph, "resource", type, resource, field, "length"]
  * 
  * ["juno", "resource", "person", "_1", "name", "length"]
  */
 export const resourceFieldLengthPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field, 'length']
+/**
+ * [graph, "resource", type, resource, "label"]
+ * 
+ * ["juno", "resource", "person", "_1", "label"]
+ */
+export const resourceLabelPath = (graph: string, type: string, resource: string) => [graph, 'resource', type, resource, 'label']
 
 
 export const batch = <Request, Merged>(
@@ -129,6 +135,7 @@ export const batch = <Request, Merged>(
     return response$!
   }
 }
+
 
 // the above should be possible with a RxJS-only solution
 // export const batch = <Request, Merged>(

@@ -1,12 +1,11 @@
 import { PathValue, Atom, Ref } from 'falcor-router'
-import { of, Observable, from } from 'rxjs'
+import { Observable, from } from 'rxjs'
 import { $ref, $atom } from '../utils/falcor'
-import { map, mergeMap } from 'rxjs/operators'
-import { resourceFieldLengthPath, resourceFieldValuePath, resourceFieldPath, resourcePath } from '../utils/juno';
+import { map } from 'rxjs/operators'
 
 
-const TYPES_LIST = ['company', 'person']
-const TYPES: {
+export const TYPES_LIST = ['company', 'person']
+export const TYPES: {
   [id: string]: {
     label: (string | Atom)[],
     field: Ref[],
@@ -25,7 +24,7 @@ const TYPES: {
     field: [$ref(['juno', 'resource', 'field', 'name'])],
   }
 }
-const FIELDS: {
+export const FIELDS: {
   [id: string]: {
     label: (string | Atom)[],
     range: (string | Atom | Ref)[],
@@ -53,6 +52,7 @@ const FIELDS: {
   }
 }
 
+
 export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<PathValue> => from(indicesOrLength).pipe(
   map((idxOrLength) => {
     if (idxOrLength === 'length') {
@@ -71,127 +71,5 @@ export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<
       path: ['juno', 'types', idxOrLength],
       value: null
     }
-  })
-)
-
-export const graphTypeValue = (ids: string[], fields: string[], indices: number[]): Observable<PathValue> => from(ids).pipe(
-  mergeMap((id) => {
-    if (TYPES[id] === undefined) {
-      return of({
-        path: resourcePath('juno', 'type', id),
-        value: null,
-      })
-    }
-
-    return from(fields).pipe(
-      mergeMap((field) => from(indices).pipe(
-        map((index) => {
-          if (TYPES[id][field] === undefined) {
-            return {
-              path: resourceFieldPath('juno', 'type', id, field),
-              value: null
-            }
-          } else if (TYPES[id][field][index] === undefined) {
-            return {
-              path: resourceFieldValuePath('juno', 'type', id, field, index),
-              value: null
-            }
-          }
-
-          return {
-            path: resourceFieldValuePath('juno', 'type', id, field, index),
-            value: TYPES[id][field][index],
-          }
-        })
-      ))
-    )
-  })
-)
-
-export const graphTypeValueLength = (ids: string[], fields: string[]): Observable<PathValue> => from(ids).pipe(
-  mergeMap((id) => {
-    if (TYPES[id] === undefined) {
-      return of({
-        path: resourcePath('juno', 'type', id),
-        value: null,
-      })
-    }
-
-    return from(fields).pipe(
-      map((field) => {
-        if (TYPES[id][field] === undefined) {
-          return {
-            path: resourceFieldLengthPath('juno', 'type', id, field),
-            value: null
-          }
-        }
-
-        return {
-          path: resourceFieldLengthPath('juno', 'type', id, field),
-          value: TYPES[id][field].length
-        }
-      })
-    )
-  })
-)
-
-export const graphFieldValue = (ids: string[], fields: ('label' | 'range')[], indices: number[]): Observable<PathValue> => from(ids).pipe(
-  mergeMap((id) => {
-    if (FIELDS[id] === undefined) {
-      return of({
-        path: resourcePath('juno', 'field', id),
-        value: null,
-      })
-    }
-
-    return from(fields).pipe(
-      mergeMap((field) => from(indices).pipe(
-        map((index) => {
-          if (FIELDS[id][field] === undefined) {
-            return {
-              path: resourceFieldPath('juno', 'field', id, field),
-              value: null
-            }
-          } else if (FIELDS[id][field][index] === undefined) {
-            return {
-              path: resourceFieldValuePath('juno', 'field', id, field, index),
-              value: null
-            }
-          }
-
-          return {
-            path: resourceFieldValuePath('juno', 'field', id, 'label', index),
-            value: FIELDS[id][field][index]
-          }
-        })
-      ))
-    )
-  })
-)
-
-export const graphFieldValueLength = (ids: string[], fields: string[]): Observable<PathValue> => from(ids).pipe(
-  mergeMap((id) => {
-    if (FIELDS[id] === undefined) {
-      return of({
-        path: resourcePath('juno', 'field', id),
-        value: null,
-      })
-    }
-
-    return from(fields).pipe(
-      map((field) => {
-        if (FIELDS[id][field] === undefined) {
-          return {
-            path: resourceFieldLengthPath('juno', 'field', id, field),
-            value: null
-          }
-        }
-
-        return {
-          path: resourceFieldLengthPath('juno', 'field', id, field),
-          value: FIELDS[id][field].length
-        }
-      })
-    )
   })
 )

@@ -5,24 +5,27 @@ import { from, Observable } from 'rxjs'
 import { map as mapRx, mergeMap, bufferTime } from 'rxjs/operators'
 import searchHandler from './search'
 import resourceHandler from './resource'
-import { graphTypeList, graphTypeValue, graphFieldValue, graphTypeValueLength, graphFieldValueLength } from './ontology'
+import { TYPES, FIELDS, graphTypeList } from './ontology'
 import { logError } from '../utils/rxjs'
 import { metrics, MetricHandlers, MetricEvent, logger, instrument, event } from '../metrics'
 import { batch } from '../utils/juno'
-import { countriesValue, countriesValueLength } from './countries';
+import { COUNTRIES } from './countries'
+import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
 
 
 export type SearchRequest = { type: 'search', searchId: string, ranges: StandardRange[] }
 export type SearchCountRequest = { type: 'search-count', searchId: string }
-export type ResourceRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
+export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
 export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], resources: string[], fields: string[] }
+export type ResourceLabelRequest = { type: 'resource-label', resourceTypes: string[], resources: string[] }
+export type ResourceRequest = ResourceValueRequest | ResourceCountRequest | ResourceLabelRequest
 export type MergedSearchRequest = Array<{ searchId: string, ranges: StandardRange[], count: boolean }>
-export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean}
+export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean, label: boolean }
 export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
 
 type IFalcorRouter = {
   search: (req: SearchRequest | SearchCountRequest) => Observable<PathValue>
-  resource: (req: ResourceRequest | ResourceCountRequest) => Observable<PathValue>
+  resource: (req: ResourceRequest) => Observable<PathValue>
 }
 
 
@@ -66,6 +69,12 @@ const BaseRouter = Router.createClass([
     },
   },
   {
+    route: 'juno.resource[{keys}][{keys}].label',
+    get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
+      return this.resource({ type: 'resource-label', resourceTypes, resources }).pipe(logError, bufferTime(0))
+    },
+  },
+  {
     route: 'juno.resource[{keys}][{keys}].id',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
       return from(xprod(resourceTypes, resources)).pipe(
@@ -81,7 +90,7 @@ const BaseRouter = Router.createClass([
     get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
       return from(xprod(resourceTypes, resources)).pipe(
         mapRx(([type, id]) => ({
-          path: ['juno', 'resource', type, id, 'id'],
+          path: ['juno', 'resource', type, id, 'type'],
           value: type,
         }))
       )
@@ -92,14 +101,20 @@ const BaseRouter = Router.createClass([
    */
   {
     route: 'juno.resource.country[{keys}][{keys}][{integers}].value',
-    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], ('label' | 'range')[], number[]]) {
-      return countriesValue(ids, fields, indices).pipe(logError, bufferTime(0))
+    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
+      return resourceFieldValueFromMemory(COUNTRIES, 'juno', 'country', ids, fields, indices).pipe(logError, bufferTime(0))
     },
   },
   {
     route: 'juno.resource.country[{keys}][{keys}].length',
-    get([_, __, ___, ids, fields]: [null, null, null, string[], ('label' | 'range')[]]) {
-      return countriesValueLength(ids, fields).pipe(logError, bufferTime(0))
+    get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
+      return resourceFieldLengthFromMemory(COUNTRIES, 'juno', 'country', ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.country[{keys}].label',
+    get([_, __, ___, ids]: [null, null, null, string[]]) {
+      return resourceLabelFromMemory(COUNTRIES, 'juno', 'country', ids).pipe(logError, bufferTime(0))
     },
   },
   /**
@@ -108,13 +123,19 @@ const BaseRouter = Router.createClass([
   {
     route: 'juno.resource.type[{keys}]["label", "field"][{integers}].value',
     get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
-      return graphTypeValue(ids, fields, indices).pipe(logError, bufferTime(0))
+      return resourceFieldValueFromMemory(TYPES, 'juno', 'type', ids, fields, indices).pipe(logError, bufferTime(0))
     },
   },
   {
     route: 'juno.resource.type[{keys}]["label", "field"].length',
     get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
-      return graphTypeValueLength(ids, fields).pipe(logError, bufferTime(0))
+      return resourceFieldLengthFromMemory(TYPES, 'juno', 'type', ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.type[{keys}].label',
+    get([_, __, ___, ids]: [null, null, null, string[]]) {
+      return resourceLabelFromMemory(TYPES, 'juno', 'type', ids).pipe(logError, bufferTime(0))
     },
   },
   /**
@@ -122,14 +143,20 @@ const BaseRouter = Router.createClass([
    */
   {
     route: 'juno.resource.field[{keys}]["label", "range"][{integers}].value',
-    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], ('label' | 'range')[], number[]]) {
-      return graphFieldValue(ids, fields, indices).pipe(logError, bufferTime(0))
+    get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
+      return resourceFieldValueFromMemory(FIELDS, 'juno', 'field', ids, fields, indices).pipe(logError, bufferTime(0))
     },
   },
   {
     route: 'juno.resource.field[{keys}]["label", "range"].length',
-    get([_, __, ___, ids, fields]: [null, null, null, string[], ('label' | 'range')[]]) {
-      return graphFieldValueLength(ids, fields).pipe(logError, bufferTime(0))
+    get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
+      return resourceFieldLengthFromMemory(FIELDS, 'juno', 'field', ids, fields).pipe(logError, bufferTime(0))
+    },
+  },
+  {
+    route: 'juno.resource.field[{keys}].label',
+    get([_, __, ___, ids]: [null, null, null, string[]]) {
+      return resourceLabelFromMemory(FIELDS, 'juno', 'field', ids).pipe(logError, bufferTime(0))
     },
   },
   /**
@@ -156,7 +183,7 @@ const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountRequest>) => 
   }))
 )
 
-const mergeResourceRequests = reduce<ResourceRequest | ResourceCountRequest, MergedResourceRequest>(
+const mergeResourceRequests = reduce<ResourceRequest, MergedResourceRequest>(
   (grouped, req) => {
     return req.resourceTypes.reduce((grouped, resourceType) => {
       return over(lensProp(resourceType), (requestsByType: ResourceRequestByType | undefined) => {
@@ -165,14 +192,21 @@ const mergeResourceRequests = reduce<ResourceRequest | ResourceCountRequest, Mer
             resources: [],
             fields: [],
             ranges: [],
-            count: false
+            count: false,
+            label: false,
           }),
           over(lensProp('resources'), (resources) => uniq(concat(req.resources, resources))),
-          over(lensProp('fields'), (fields) => uniq(concat(req.fields, fields))),
+          over(lensProp('fields'), (fields) => req.type !== 'resource-label' ? uniq(concat(req.fields, fields)) : fields),
           (requestsByType) => {
-            return req.type === 'resource' ?
-              over(lensProp('ranges'), (ranges) => uniq(concat(req.ranges, ranges)), requestsByType) : // TODO - merge ranges, rather than simply concatenating
-              set(lensProp('count'), true, requestsByType)
+            if (req.type === 'resource') {
+              return over(lensProp('ranges'), (ranges) => uniq(concat(req.ranges, ranges)), requestsByType) // TODO - merge ranges, rather than simply concatenating
+            } else if (req.type === 'resource-count') {
+              return set(lensProp('count'), true, requestsByType)
+            } else if (req.type === 'resource-label') {
+              return set(lensProp('label'), true, requestsByType)
+            }
+
+            return requestsByType as never
           },
         )(requestsByType)
       }, grouped)

@@ -3,15 +3,31 @@ import { delay, mergeMap } from 'rxjs/operators'
 import { MergedResourceRequest } from './index'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
 import { PathValue } from 'falcor-router'
-import { xprod } from 'ramda'
-import { resourceFieldValuePath, resourceFieldLengthPath } from '../utils/juno';
+import { resourceFieldValuePath, resourceFieldLengthPath, resourceLabelPath } from '../utils/juno';
 
 
-export default (request: MergedResourceRequest): Observable<PathValue> => {
-  return from(Object.keys(request)).pipe(
-      mergeMap((type) => xprod(request[type].resources, request[type].fields)
-        .reduce<PathValue[]>((acc, [resource, field]) => {
-          const resourceResult: PathValue[] = field === 'birthDate' ?
+export default (request: MergedResourceRequest): Observable<PathValue> => from(Object.keys(request)).pipe(
+  mergeMap((type) => {
+    return from(request[type].resources).pipe(
+      mergeMap((resource) => {
+        const pathValues: PathValue[] = []
+
+        if (request[type].label) {
+          pathValues.push({
+            path: resourceLabelPath('juno', type, resource),
+            value: `${type} ${resource}`,
+          })
+        }
+
+        request[type].fields.forEach((field) => {
+          if (request[type].count) {
+            pathValues.push({
+              path: resourceFieldLengthPath('juno', type, resource, field),
+              value: field === 'shareholderOf' ? 5 : 1,
+            })
+          }
+
+          pathValues.push(...(field === 'birthDate' ?
             ranges2List(request[type].ranges).map((index) => ({
               path: resourceFieldValuePath('juno', type, resource, 'birthDate', index),
               value: index === 0 ? $atom(`1980-10-10`, { dataType: 'date' }) : null,
@@ -30,16 +46,12 @@ export default (request: MergedResourceRequest): Observable<PathValue> => {
               path: resourceFieldValuePath('juno', type, resource, field, index),
               value: $atom(`${field} value ${index}`),
             }))
+          ))
+        })
 
-          acc.push(...resourceResult)
-          if (request[type].count) {
-            acc.push({
-              path: resourceFieldLengthPath('juno', type, resource, field),
-              value: field === 'shareholderOf' ? 5 : 1,
-            })
-          }
-
-          return acc
-        }, []))
-    ).pipe(delay(100))
-}
+        return from(pathValues)
+      })
+    )
+  }),
+  delay(1)
+)

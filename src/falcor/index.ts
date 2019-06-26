@@ -11,6 +11,7 @@ import { metrics, MetricHandlers, MetricEvent, logger, instrument, event } from 
 import { batch } from '../utils/juno'
 import { COUNTRIES } from './countries'
 import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
+import { $ref } from '../utils/falcor';
 
 
 export type SearchRequest = { type: 'search', searchId: string, ranges: StandardRange[] }
@@ -91,7 +92,7 @@ const BaseRouter = Router.createClass([
       return from(xprod(resourceTypes, resources)).pipe(
         mapRx(([type, id]) => ({
           path: ['juno', 'resource', type, id, 'type'],
-          value: type,
+          value: $ref(['juno', 'resource', 'type', type]),
         }))
       )
     },

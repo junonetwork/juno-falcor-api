@@ -32,7 +32,9 @@ export const logger = (events: MetricEvent[]) => {
     return grouped
   }, {})
 
-  console.log(`Request Metrics: ${Object.keys(grouped).map((eventName) => `${eventName}: ${grouped[eventName]}`).join(' ')} - elapsed time ${Date.now() - start.t}ms`)
+  const totalRequests = Object.keys(grouped).reduce((acc, eventName) => acc + grouped[eventName], 0)
+
+  console.log(`Request Metrics: ${Object.keys(grouped).map((eventName) => `${eventName}: ${grouped[eventName]} `).join('')}totalRequests ${totalRequests} - elapsed time ${Date.now() - start.t}ms`)
 }
 
 export const instrument = <T>(handler: MetricHandlers<MetricEvent>) => (stream$: Observable<T>): Observable<T> => {

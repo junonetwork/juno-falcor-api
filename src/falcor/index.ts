@@ -225,7 +225,7 @@ class FalcorRouter extends BaseRouter implements IFalcorRouter {
   constructor() {
     super()
     this.metrics = metrics<MetricEvent>(logger)
-    this.search = batch(mergeSearchRequests, searchHandler, () => this.metrics.event(event('searchRequestt')))
+    this.search = batch(mergeSearchRequests, searchHandler, () => this.metrics.event(event('searchRequest')))
     this.resource = batch(mergeResourceRequests, resourceHandler, () => this.metrics.event(event('resourceRequest')))
   }
 

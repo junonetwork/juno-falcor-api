@@ -125,7 +125,7 @@ export const batch = <Request, Merged>(
            */
           return handler(merged).pipe(delay(0))
         }),
-        multicast(new Subject()),
+        multicast<PathValue>(new Subject()),
         refCount(),
       )
 

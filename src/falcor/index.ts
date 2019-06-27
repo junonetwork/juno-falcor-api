@@ -1,9 +1,9 @@
-import { pipe, map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo, xprod } from 'ramda'
+import { xprod } from 'ramda'
 import Router, { StandardRange, PathValue, PathSet } from 'falcor-router'
 import { from, Observable } from 'rxjs'
 import { map as mapRx, mergeMap } from 'rxjs/operators'
-import searchHandler from './search'
-import resourceHandler from './resource'
+import searchHandler, { SearchCountRequest, SearchRequest, mergeSearchRequests } from './search'
+import resourceHandler, { ResourceRequest, mergeResourceRequests } from './resource'
 import { TYPES, FIELDS, graphTypeList } from './ontology'
 import { logError } from '../utils/rxjs'
 import { metrics, MetricEvent, logger, instrument, event } from '../utils/metrics'
@@ -12,16 +12,6 @@ import { COUNTRIES } from './countries'
 import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
 import { $ref } from '../utils/falcor';
 
-
-export type SearchRequest = { type: 'search', search: string, ranges: StandardRange[] }
-export type SearchCountRequest = { type: 'search-count', search: string }
-export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
-export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], resources: string[], fields: string[] }
-export type ResourceLabelRequest = { type: 'resource-label', resourceTypes: string[], resources: string[] }
-export type ResourceRequest = ResourceValueRequest | ResourceCountRequest | ResourceLabelRequest
-export type MergedSearchRequest = Array<{ search: string, ranges: StandardRange[], count: boolean }>
-export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean, label: boolean }
-export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
 
 type IFalcorRouter = {
   search: (req: SearchRequest | SearchCountRequest) => Observable<PathValue>
@@ -171,51 +161,6 @@ const BaseRouter = Router.createClass([
 ])
 
 
-const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountRequest>) => MergedSearchRequest = pipe(
-  groupBy<SearchRequest | SearchCountRequest>(prop('search')),
-  values,
-  map((reqs) => ({
-    search: reqs[0].search,
-    ranges: uniq(
-      reqs.reduce<StandardRange[]>((acc, req) => (req.type === 'search' && acc.push(...req.ranges), acc), [])
-    ), // TODO - merge ranges, rather than simply concatenating
-    count: any(propEq('type', 'search-count'), reqs),
-  }))
-)
-
-const mergeResourceRequests = reduce<ResourceRequest, MergedResourceRequest>(
-  (grouped, req) => {
-    return req.resourceTypes.reduce((grouped, resourceType) => {
-      return over(lensProp(resourceType), (requestsByType: ResourceRequestByType | undefined) => {
-        return pipe(
-          defaultTo({
-            resources: [],
-            fields: [],
-            ranges: [],
-            count: false,
-            label: false,
-          }),
-          over(lensProp('resources'), (resources) => uniq(concat(req.resources, resources))),
-          over(lensProp('fields'), (fields) => req.type !== 'resource-label' ? uniq(concat(req.fields, fields)) : fields),
-          (requestsByType) => {
-            if (req.type === 'resource') {
-              return over(lensProp('ranges'), (ranges) => uniq(concat(req.ranges, ranges)), requestsByType) // TODO - merge ranges, rather than simply concatenating
-            } else if (req.type === 'resource-count') {
-              return set(lensProp('count'), true, requestsByType)
-            } else if (req.type === 'resource-label') {
-              return set(lensProp('label'), true, requestsByType)
-            }
-
-            return requestsByType as never
-          },
-        )(requestsByType)
-      }, grouped)
-    }, grouped)
-  },
-  {}
-)
-
-
 class FalcorRouter extends BaseRouter implements IFalcorRouter {
   public metrics = metrics<MetricEvent>(logger)
   public search = batch(mergeSearchRequests, searchHandler, () => this.metrics.event(event('searchRequest')))
@@ -225,5 +170,6 @@ class FalcorRouter extends BaseRouter implements IFalcorRouter {
     return from(super.get(pathSets)).pipe(instrument(this.metrics))
   }
 }
+
 
 export default () => new FalcorRouter()

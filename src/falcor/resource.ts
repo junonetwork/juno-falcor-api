@@ -1,9 +1,50 @@
 import { from, Observable } from 'rxjs'
 import { mergeMap } from 'rxjs/operators'
-import { MergedResourceRequest } from './index'
+import { pipe, reduce, uniq, lensProp, concat, over, set, defaultTo } from 'ramda'
+import { PathValue, StandardRange } from 'falcor-router'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
-import { PathValue } from 'falcor-router'
 import { resourceFieldValuePath, resourceFieldLengthPath, resourceLabelPath } from '../utils/juno';
+
+
+export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
+export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], resources: string[], fields: string[] }
+export type ResourceLabelRequest = { type: 'resource-label', resourceTypes: string[], resources: string[] }
+export type ResourceRequest = ResourceValueRequest | ResourceCountRequest | ResourceLabelRequest
+export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean, label: boolean }
+export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
+
+
+export const mergeResourceRequests = reduce<ResourceRequest, MergedResourceRequest>(
+  (grouped, req) => {
+    return req.resourceTypes.reduce((grouped, resourceType) => {
+      return over(lensProp(resourceType), (requestsByType: ResourceRequestByType | undefined) => {
+        return pipe(
+          defaultTo({
+            resources: [],
+            fields: [],
+            ranges: [],
+            count: false,
+            label: false,
+          }),
+          over(lensProp('resources'), (resources) => uniq(concat(req.resources, resources))),
+          over(lensProp('fields'), (fields) => req.type !== 'resource-label' ? uniq(concat(req.fields, fields)) : fields),
+          (requestsByType) => {
+            if (req.type === 'resource') {
+              return over(lensProp('ranges'), (ranges) => uniq(concat(req.ranges, ranges)), requestsByType) // TODO - merge ranges, rather than simply concatenating
+            } else if (req.type === 'resource-count') {
+              return set(lensProp('count'), true, requestsByType)
+            } else if (req.type === 'resource-label') {
+              return set(lensProp('label'), true, requestsByType)
+            }
+
+            return requestsByType as never
+          },
+        )(requestsByType)
+      }, grouped)
+    }, grouped)
+  },
+  {}
+)
 
 
 export default (request: MergedResourceRequest): Observable<PathValue> => from(Object.keys(request)).pipe(

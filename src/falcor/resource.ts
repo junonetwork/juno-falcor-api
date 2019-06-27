@@ -1,5 +1,5 @@
 import { from, Observable } from 'rxjs'
-import { mergeMap } from 'rxjs/operators'
+import { mergeMap, delay, map } from 'rxjs/operators'
 import { pipe, reduce, uniq, lensProp, concat, over, set, defaultTo } from 'ramda'
 import { PathValue, StandardRange } from 'falcor-router'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
@@ -47,10 +47,10 @@ export const mergeResourceRequests = reduce<ResourceRequest, MergedResourceReque
 )
 
 
-export default (request: MergedResourceRequest): Observable<PathValue> => from(Object.keys(request)).pipe(
+export default (request: MergedResourceRequest): Observable<PathValue | PathValue[]> => from(Object.keys(request)).pipe(
   mergeMap((type) => {
     return from(request[type].resources).pipe(
-      mergeMap((resource) => {
+      map((resource) => {
         const pathValues: PathValue[] = []
 
         if (request[type].label) {
@@ -90,8 +90,9 @@ export default (request: MergedResourceRequest): Observable<PathValue> => from(O
           ))
         })
 
-        return from(pathValues)
-      })
+        return pathValues
+      }),
+      delay(100)
     )
   }),
 )

@@ -88,9 +88,9 @@ declare module 'falcor-router' {
 
   export type Sentinel = Atom | Ref | ErrorSentinel
 
-  export type PathValue<Value = any> = {
+  export type PathValue = {
     path: string | PathSet
-    value: Value | Atom<Value> | Ref | ErrorSentinel
+    value: Primitive | Atom | Ref | ErrorSentinel
   }
 
   export type StandardRange = {

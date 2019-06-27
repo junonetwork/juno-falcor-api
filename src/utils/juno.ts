@@ -1,8 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
-import { KeySet, PathValue } from 'falcor-json-graph'
-import { Observable, from, Subject, ReplaySubject } from 'rxjs'
-import { tap, catchError, toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
-import { $error } from './falcor'
+import { PathValue } from 'falcor-router';
+import { Observable, Subject, ReplaySubject } from 'rxjs'
+import { toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
 
 
 export const noop = () => {}
@@ -14,30 +13,6 @@ export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
     acc.push(...abcProd)
     return acc
   }, [])
-
-
-export const handleError = (
-  expectedPaths: KeySet[],
-  errorMessage: (err: any) => string = (err: any) => process.env.NODE_ENV === 'development' ? err : 'Error'
-) => (stream$: Observable<PathValue>) => {
-  const seenPaths: Set<KeySet> = new Set()
-
-  return stream$.pipe(
-    tap((pathValue) => seenPaths.add(pathValue.path)),
-    catchError((err) => {
-      console.error(err)
-      const message = errorMessage(err)
-
-      return from(expectedPaths
-        .filter((path) => !seenPaths.has(path))
-        .map((path) => ({
-          path,
-          value: $error('500', message)
-        }))
-      )
-    })
-  )
-}
 
 
 /**
@@ -104,13 +79,13 @@ export const resourceLabelPath = (graph: string, type: string, resource: string)
 
 export const batch = <Request, Merged>(
   merge: (reqs: Request[]) => Merged,
-  handler: (mergedRequests: Merged) => Observable<PathValue>,
+  handler: (mergedRequests: Merged) => Observable<PathValue | PathValue[]>,
   tapMergedRequests: (mergedRequests: Merged) => void = noop
 ) => {
   let request$: Subject<Request> | undefined
-  let response$: Observable<PathValue> | undefined
+  let response$: Observable<PathValue | PathValue[]> | undefined
 
-  return (req: Request): Observable<PathValue> => {
+  return (req: Request): Observable<PathValue | PathValue[]> => {
     if (request$ === undefined) {
       request$ = new ReplaySubject<Request>()
       response$ = request$.pipe(
@@ -125,7 +100,7 @@ export const batch = <Request, Merged>(
            */
           return handler(merged).pipe(delay(0))
         }),
-        multicast<PathValue>(new Subject()),
+        multicast<PathValue | PathValue[]>(new Subject()),
         refCount(),
       )
 
@@ -166,20 +141,24 @@ export const batch = <Request, Merged>(
 // }
 
 
-export const bufferSynchronousEmits = <T>(): (stream$: Observable<T>) => Observable<T[]> => {
+export const bufferSynchronous = () => {
   let interval: NodeJS.Timeout
-  let buffer: T[]
+  let buffer: PathValue[]
 
-  return (stream$: Observable<T>) => {
+  return (stream$: Observable<PathValue | PathValue[]>): Observable<PathValue[]> => {
     return new Observable((observer) => {
       return stream$.subscribe({
         next: (data) => {
           if (buffer === undefined) {
-            buffer = [data]
+            buffer = []
             interval = setTimeout(() => {
               observer.next(buffer)
               buffer = []
             }, 0)
+          }
+
+          if (Array.isArray(data)) {
+            buffer.push(...data)
           } else {
             buffer.push(data)
           }

@@ -4,7 +4,7 @@ import { PathValue, StandardRange } from 'falcor-router'
 import { pipe, map, groupBy, values, any, propEq, uniq, prop } from 'ramda'
 import { $error, ranges2List, $ref } from '../utils/falcor'
 import { parseSearch } from '../utils/search'
-import { searchPath, searchResultPath } from '../utils/juno';
+import { searchPath, searchResultPath, searchLengthPath } from '../utils/juno';
 
 
 export type SearchRequest = { type: 'search', search: string, ranges: StandardRange[] }
@@ -25,7 +25,7 @@ export const mergeSearchRequests: (reqs: Array<SearchRequest | SearchCountReques
 )
 
 
-export default (merged: MergedSearchRequest): Observable<PathValue> => from(merged).pipe(
+export default (merged: MergedSearchRequest): Observable<PathValue | PathValue[]> => from(merged).pipe(
   mergeMap(({ search, ranges, count }) => {
     const parsedSearch = parseSearch(search)
   
@@ -36,19 +36,17 @@ export default (merged: MergedSearchRequest): Observable<PathValue> => from(merg
       })
     }
   
-    const searchResults = ranges2List(ranges).map((index) => ({
+    const searchResults: PathValue[] = ranges2List(ranges).map((index) => ({
       path: searchResultPath('juno', search, index),
       value: $ref(['juno', 'resource', parsedSearch.type, `_${index}`])
     }))
-  
-    const countResults = count ? [{
-      path: ['juno', 'search', search, 'length'],
-      value: 100
-    }] : []
-  
-    return of<PathValue>(
-      ...searchResults,
-      ...countResults,
+
+    return from(count ?
+      searchResults.concat({
+        path: searchLengthPath('juno', search),
+        value: 100
+      }) :
+      searchResults
     ).pipe(delay(100))
   })
 )

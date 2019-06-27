@@ -1,4 +1,4 @@
-import { Subject, throwError } from 'rxjs'
+import { Subject, throwError, Observable } from 'rxjs'
 import { catchError } from 'rxjs/operators'
 
 export const fromHandler = <T>(): { handler: (data: T) => void, stream: Subject<T> } => {
@@ -8,7 +8,7 @@ export const fromHandler = <T>(): { handler: (data: T) => void, stream: Subject<
   }
 }
 
-export const logError = catchError((err) => {
+export const logError = <T>() => catchError<T, Observable<never>>((err) => {
   console.error(err)
   return throwError(new Error('500'))
 })

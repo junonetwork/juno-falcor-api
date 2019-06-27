@@ -1,7 +1,6 @@
 import { PathValue, Atom, Ref } from 'falcor-router'
-import { Observable, from } from 'rxjs'
+import { Observable, of } from 'rxjs'
 import { $ref, $atom } from '../utils/falcor'
-import { map } from 'rxjs/operators'
 
 
 export const TYPES_LIST = ['company', 'person']
@@ -53,23 +52,21 @@ export const FIELDS: {
 }
 
 
-export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<PathValue> => from(indicesOrLength).pipe(
-  map((idxOrLength) => {
-    if (idxOrLength === 'length') {
-      return {
-        path: ['juno', 'types', 'length'],
-        value: TYPES_LIST.length
-      }
-    } else if (TYPES_LIST[idxOrLength] !== undefined) {
-      return {
-        path: ['juno', 'types', idxOrLength],
-        value: $ref(['juno', 'resource', 'type', TYPES_LIST[idxOrLength]])
-      }
+export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<PathValue[]> => of(indicesOrLength.map((idxOrLength) => {
+  if (idxOrLength === 'length') {
+    return {
+      path: ['juno', 'types', 'length'],
+      value: TYPES_LIST.length
     }
-
+  } else if (TYPES_LIST[idxOrLength] !== undefined) {
     return {
       path: ['juno', 'types', idxOrLength],
-      value: null
+      value: $ref(['juno', 'resource', 'type', TYPES_LIST[idxOrLength]])
     }
-  })
-)
+  }
+
+  return {
+    path: ['juno', 'types', idxOrLength],
+    value: null
+  }
+}))

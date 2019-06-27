@@ -21,7 +21,7 @@ export const logger = (events: MetricEvent[]) => {
     return
   }
 
-  const grouped = events.reduce((grouped, event) => {
+  const grouped = events.reduce<{ [event: string]: number }>((grouped, event) => {
     if (event.type === 'event') {
       if (grouped[event.name] === undefined) {
         grouped[event.name] = 1

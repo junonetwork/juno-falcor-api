@@ -8,7 +8,7 @@ export const noop = () => {}
 
 
 export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
-  .reduce<Array<[A, B, C]>>((acc, abProd: [A, B]) => {
+  .reduce<Array<[A, B, C]>>((acc, abProd) => {
     const abcProd = cx.map((c) => [...abProd, c] as [A, B, C])
     acc.push(...abcProd)
     return acc

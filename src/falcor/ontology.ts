@@ -52,7 +52,7 @@ export const FIELDS: {
 }
 
 
-export const graphTypeList = (indicesOrLength: (string | number)[]): Observable<PathValue[]> => of(indicesOrLength.map((idxOrLength) => {
+export const graphTypeList = (indicesOrLength: ('length' | number)[]): Observable<PathValue[]> => of(indicesOrLength.map((idxOrLength) => {
   if (idxOrLength === 'length') {
     return {
       path: ['juno', 'types', 'length'],

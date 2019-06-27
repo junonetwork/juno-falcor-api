@@ -31,4 +31,4 @@ export const $atom = (value: any, { dataType, language }: { dataType?: string, l
   return atom
 }
 export const $ref = (value: Array<string | number>): Ref => ({ $type: 'ref', value })
-export const $error = (code, message): ErrorSentinel => ({ $type: 'error', value: { code, message } })
+export const $error = (code: string, message: string): ErrorSentinel => ({ $type: 'error', value: { code, message } })

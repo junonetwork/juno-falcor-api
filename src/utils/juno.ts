@@ -1,7 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { KeySet, PathValue } from 'falcor-json-graph'
 import { Observable, from, Subject, ReplaySubject } from 'rxjs'
-import { tap, catchError, toArray, mergeMap, multicast, refCount } from 'rxjs/operators'
+import { tap, catchError, toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
 import { $error } from './falcor'
 
 
@@ -118,7 +118,12 @@ export const batch = <Request, Merged>(
         mergeMap((reqs) => {
           const merged = merge(reqs)
           tapMergedRequests(merged)
-          return handler(merged)
+
+          /**
+           * TODO - why are parts of deep responses lost when emits are synchronous?  i.e. w/o delay(0)
+           * {{BASE_URL}}/model.json?method=get&paths=[["juno", "resource", "person", "_0", ["birthDate", "shareholderOf", "nationality"], 0, "value", "label"], ["juno", "resource", "person", "_0", ["birthDate", "shareholderOf", "nationality"], "length"], ["juno", "resource", "person", "_2", "shareholderOf", "length"], ["juno", "resource", "person", "_2", "shareholderOf", { "to": 1 }, "value", "label"], ["juno", "resource", "person", "_2", "shareholderOf", { "to": 1 }, "value", ["name", "shareholderOf"], 0, "value", "label"]]
+           */
+          return handler(merged).pipe(delay(0))
         }),
         multicast(new Subject()),
         refCount(),
@@ -159,3 +164,36 @@ export const batch = <Request, Merged>(
 //     )
 //   }
 // }
+
+
+export const bufferSynchronousEmits = <T>(): (stream$: Observable<T>) => Observable<T[]> => {
+  let interval: NodeJS.Timeout
+  let buffer: T[]
+
+  return (stream$: Observable<T>) => {
+    return new Observable((observer) => {
+      return stream$.subscribe({
+        next: (data) => {
+          if (buffer === undefined) {
+            buffer = [data]
+            interval = setTimeout(() => {
+              observer.next(buffer)
+              buffer = []
+            }, 0)
+          } else {
+            buffer.push(data)
+          }
+        },
+        error: observer.error.bind(observer),
+        complete: () => {
+          if (buffer !== undefined) {
+            observer.next(buffer)
+            clearInterval(interval)
+          }
+
+          observer.complete()
+        },
+      })
+    })
+  }
+}

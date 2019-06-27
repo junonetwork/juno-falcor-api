@@ -1,13 +1,13 @@
 import { pipe, map, groupBy, values, any, propEq, reduce, uniq, prop, lensProp, concat, over, set, defaultTo, xprod } from 'ramda'
 import Router, { StandardRange, PathValue, PathSet } from 'falcor-router'
 import { from, Observable } from 'rxjs'
-import { map as mapRx, mergeMap, bufferTime } from 'rxjs/operators'
+import { map as mapRx, mergeMap } from 'rxjs/operators'
 import searchHandler from './search'
 import resourceHandler from './resource'
 import { TYPES, FIELDS, graphTypeList } from './ontology'
 import { logError } from '../utils/rxjs'
-import { metrics, MetricEvent, logger, instrument, event } from '../metrics'
-import { batch } from '../utils/juno'
+import { metrics, MetricEvent, logger, instrument, event } from '../utils/metrics'
+import { batch, bufferSynchronousEmits } from '../utils/juno'
 import { COUNTRIES } from './countries'
 import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
 import { $ref } from '../utils/falcor';
@@ -39,7 +39,7 @@ const BaseRouter = Router.createClass([
       return from(searches).pipe(
         mergeMap((search) => this.search({ type: 'search', search, ranges })),
         logError,
-        bufferTime(0)
+        bufferSynchronousEmits()
       )
     },
   },
@@ -49,7 +49,7 @@ const BaseRouter = Router.createClass([
       return from(searches).pipe(
         mergeMap((search) => this.search({ type: 'search-count', search })),
         logError,
-        bufferTime(0)
+        bufferSynchronousEmits()
       )
     }
   },
@@ -59,19 +59,19 @@ const BaseRouter = Router.createClass([
   {
     route: 'juno.resource[{keys}][{keys}][{keys}][{ranges}]["value", "qualifier"]',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields, ranges]: [null, null, string[], string[], string[], StandardRange[]]) {
-      return this.resource({ type: 'resource', resourceTypes, resources, fields, ranges }).pipe(logError, bufferTime(0))
+      return this.resource({ type: 'resource', resourceTypes, resources, fields, ranges }).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource[{keys}][{keys}][{keys}].length',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields]: [null, null, string[], string[], string[]]) {
-      return this.resource({ type: 'resource-count', resourceTypes, resources, fields }).pipe(logError, bufferTime(0))
+      return this.resource({ type: 'resource-count', resourceTypes, resources, fields }).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource[{keys}][{keys}].label',
     get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [null, null, string[], string[]]) {
-      return this.resource({ type: 'resource-label', resourceTypes, resources }).pipe(logError, bufferTime(0))
+      return this.resource({ type: 'resource-label', resourceTypes, resources }).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
@@ -102,19 +102,19 @@ const BaseRouter = Router.createClass([
   {
     route: 'juno.resource.country[{keys}][{keys}][{integers}].value',
     get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
-      return resourceFieldValueFromMemory(COUNTRIES, 'juno', 'country', ids, fields, indices).pipe(logError, bufferTime(0))
+      return resourceFieldValueFromMemory(COUNTRIES, 'juno', 'country', ids, fields, indices).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.country[{keys}][{keys}].length',
     get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
-      return resourceFieldLengthFromMemory(COUNTRIES, 'juno', 'country', ids, fields).pipe(logError, bufferTime(0))
+      return resourceFieldLengthFromMemory(COUNTRIES, 'juno', 'country', ids, fields).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.country[{keys}].label',
     get([_, __, ___, ids]: [null, null, null, string[]]) {
-      return resourceLabelFromMemory(COUNTRIES, 'juno', 'country', ids).pipe(logError, bufferTime(0))
+      return resourceLabelFromMemory(COUNTRIES, 'juno', 'country', ids).pipe(logError, bufferSynchronousEmits())
     },
   },
   /**
@@ -123,40 +123,40 @@ const BaseRouter = Router.createClass([
   {
     route: 'juno.resource.type[{keys}]["label", "field"][{integers}].value',
     get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
-      return resourceFieldValueFromMemory(TYPES, 'juno', 'type', ids, fields, indices).pipe(logError, bufferTime(0))
+      return resourceFieldValueFromMemory(TYPES, 'juno', 'type', ids, fields, indices).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.type[{keys}]["label", "field"].length',
     get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
-      return resourceFieldLengthFromMemory(TYPES, 'juno', 'type', ids, fields).pipe(logError, bufferTime(0))
+      return resourceFieldLengthFromMemory(TYPES, 'juno', 'type', ids, fields).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.type[{keys}].label',
     get([_, __, ___, ids]: [null, null, null, string[]]) {
-      return resourceLabelFromMemory(TYPES, 'juno', 'type', ids).pipe(logError, bufferTime(0))
+      return resourceLabelFromMemory(TYPES, 'juno', 'type', ids).pipe(logError, bufferSynchronousEmits())
     },
   },
   /**
-   * Feild Resource Routes
+   * Field Resource Routes
    */
   {
     route: 'juno.resource.field[{keys}]["label", "range"][{integers}].value',
     get([_, __, ___, ids, fields, indices]: [null, null, null, string[], string[], number[]]) {
-      return resourceFieldValueFromMemory(FIELDS, 'juno', 'field', ids, fields, indices).pipe(logError, bufferTime(0))
+      return resourceFieldValueFromMemory(FIELDS, 'juno', 'field', ids, fields, indices).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.field[{keys}]["label", "range"].length',
     get([_, __, ___, ids, fields]: [null, null, null, string[], string[]]) {
-      return resourceFieldLengthFromMemory(FIELDS, 'juno', 'field', ids, fields).pipe(logError, bufferTime(0))
+      return resourceFieldLengthFromMemory(FIELDS, 'juno', 'field', ids, fields).pipe(logError, bufferSynchronousEmits())
     },
   },
   {
     route: 'juno.resource.field[{keys}].label',
     get([_, __, ___, ids]: [null, null, null, string[]]) {
-      return resourceLabelFromMemory(FIELDS, 'juno', 'field', ids).pipe(logError, bufferTime(0))
+      return resourceLabelFromMemory(FIELDS, 'juno', 'field', ids).pipe(logError, bufferSynchronousEmits())
     },
   },
   /**
@@ -165,7 +165,7 @@ const BaseRouter = Router.createClass([
   {
     route: 'juno.types[{keys}]',
     get([_, __, indicesOrLength]: [null, null, ('length' | number)[]]) {
-      return graphTypeList(indicesOrLength).pipe(logError, bufferTime(0))
+      return graphTypeList(indicesOrLength).pipe(logError, bufferSynchronousEmits())
     }
   },
 ])

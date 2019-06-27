@@ -1,13 +1,13 @@
 import { PathValue, Atom, Ref } from 'falcor-router'
 import { of, Observable, from } from 'rxjs'
-import { map, mergeMap, delay } from 'rxjs/operators'
+import { map, mergeMap } from 'rxjs/operators'
 import { resourceFieldLengthPath, resourceFieldValuePath, resourceFieldPath, resourcePath, resourceLabelPath } from '../utils/juno'
 import { xprod } from 'ramda'
 
 
 export type MemoryStore = {
   [id: string]: {
-    [field: string]: (string | Atom | Ref)[]
+    [field: string]: (string | number | boolean | Atom | Ref)[]
   }
 }
 
@@ -43,7 +43,6 @@ export const resourceFieldValueFromMemory = (
       })
     )
   }),
-  delay(0)
 )
 
 export const resourceFieldLengthFromMemory = (
@@ -73,7 +72,6 @@ export const resourceFieldLengthFromMemory = (
       })
     )
   }),
-  delay(0)
 )
 
 export const resourceLabelFromMemory = (
@@ -93,7 +91,7 @@ export const resourceLabelFromMemory = (
     }
 
     const label = store[id].label[0]
-    if (typeof label !== 'string' && label.$type === 'ref') {
+    if (typeof label === 'object' && label.$type === 'ref') {
       return {
         path: resourceLabelPath(graph, type, id),
         value: null
@@ -105,5 +103,4 @@ export const resourceLabelFromMemory = (
       value: label
     }
   }),
-  delay(0)
 )

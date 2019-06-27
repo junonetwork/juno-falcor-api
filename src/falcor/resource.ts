@@ -1,5 +1,5 @@
 import { from, Observable } from 'rxjs'
-import { delay, mergeMap } from 'rxjs/operators'
+import { mergeMap } from 'rxjs/operators'
 import { MergedResourceRequest } from './index'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
 import { PathValue } from 'falcor-router'
@@ -53,5 +53,4 @@ export default (request: MergedResourceRequest): Observable<PathValue> => from(O
       })
     )
   }),
-  delay(0)
 )

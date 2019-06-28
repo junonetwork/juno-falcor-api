@@ -1,7 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { PathValue } from 'falcor-router';
-import { Observable, Subject, ReplaySubject } from 'rxjs'
-import { toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
+import { Observable, Subject, ReplaySubject, concat, merge } from 'rxjs'
+import { toArray, mergeMap, multicast, refCount, delay, tap } from 'rxjs/operators'
 
 
 export const noop = () => {}
@@ -175,4 +175,68 @@ export const bufferSynchronous = () => {
       })
     })
   }
+}
+
+
+export const padMissingStatic = <T, S = any>(
+  stream$: Observable<T>,
+  expected: S[],
+  selector: (data: T) => S,
+) => {
+  const missing = new Set(expected)
+  const missing$ = new Subject<S[]>()
+
+  return [
+    new Observable((observer) => stream$.subscribe({
+      next: (data) => {
+        missing.delete(selector(data))
+        observer.next(data)
+      },
+      error: (err) => {
+        observer.error(err)
+        missing$.error(err)
+      },
+      complete: () => {
+        missing$.next(Array.from(missing))
+        observer.complete()
+        missing$.complete()
+      },
+    })),
+    missing$
+  ] as [Observable<T>, Observable<S[]>]
+}
+
+
+export const padMissing = <T, R, S = any>(
+  expected: S[],
+  selector: (data: T) => S | S[],
+  projectData: (data$: Observable<T>) => Observable<R>,
+  projectMissing: (missing: S[]) => Observable<R>
+) => {
+  const missing = new Set(expected)
+  const missing$ = new ReplaySubject<R>()
+
+  return (stream$: Observable<T>): Observable<R> => merge(
+    projectData(new Observable<T>((observer) => stream$.subscribe({
+      next: (data) => {
+        const seen = selector(data)
+        if (Array.isArray(seen)) {
+          seen.forEach((item) => missing.delete(item))
+        } else {
+          missing.delete(seen)
+        }
+        observer.next(data)
+      },
+      error: (err) => {
+        observer.error(err)
+        missing$.error(err)
+      },
+      complete: () => {
+        projectMissing(Array.from(missing)).forEach(missing$.next.bind(missing$))
+        observer.complete()
+        missing$.complete()
+      },
+    }))),
+    missing$
+  )
 }

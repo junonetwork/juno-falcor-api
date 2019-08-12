@@ -3,7 +3,7 @@ import { mergeMap, delay, map, filter } from 'rxjs/operators'
 import { pipe, reduce, uniq, lensProp, concat, over, set, defaultTo } from 'ramda'
 import { PathValue, StandardRange } from 'falcor-router'
 import { ranges2List, $atom, $ref } from '../utils/falcor'
-import { resourceFieldValuePath, resourceFieldLengthPath, resourceLabelPath } from '../utils/juno';
+import { resourceFieldValuePath, resourceFieldLengthPath, resourceLabelPath } from '../utils/juno'
 
 
 export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }

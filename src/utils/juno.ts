@@ -1,6 +1,6 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { PathValue } from 'falcor-router';
-import { Observable, Subject, ReplaySubject, concat, merge } from 'rxjs'
+import { Observable, Subject, ReplaySubject, concat, merge, GroupedObservable, of } from 'rxjs'
 import { toArray, mergeMap, multicast, refCount, delay, tap } from 'rxjs/operators'
 
 
@@ -142,7 +142,7 @@ export const batch = <Request, Merged>(
 
 
 export const bufferSynchronous = () => {
-  let interval: NodeJS.Timeout
+  let interval: NodeJS.Immediate
   let buffer: PathValue[]
 
   return (stream$: Observable<PathValue | PathValue[]>): Observable<PathValue[]> => {
@@ -151,10 +151,10 @@ export const bufferSynchronous = () => {
         next: (data) => {
           if (buffer === undefined) {
             buffer = []
-            interval = setTimeout(() => {
+            interval = setImmediate(() => { // should this be implemented via process.nextTick?
               observer.next(buffer)
               buffer = []
-            }, 0)
+            })
           }
 
           if (Array.isArray(data)) {
@@ -167,7 +167,7 @@ export const bufferSynchronous = () => {
         complete: () => {
           if (buffer !== undefined) {
             observer.next(buffer)
-            clearInterval(interval)
+            clearImmediate(interval)
           }
 
           observer.complete()
@@ -207,36 +207,31 @@ export const padMissingStatic = <T, S = any>(
 }
 
 
-export const padMissing = <T, R, S = any>(
+export const padBy = <T, S>(
   expected: S[],
   selector: (data: T) => S | S[],
-  projectData: (data$: Observable<T>) => Observable<R>,
-  projectMissing: (missing: S[]) => Observable<R>
 ) => {
   const missing = new Set(expected)
-  const missing$ = new ReplaySubject<R>()
+  const missing$ = new ReplaySubject<S[]>()
 
-  return (stream$: Observable<T>): Observable<R> => merge(
-    projectData(new Observable<T>((observer) => stream$.subscribe({
+  return (stream$: Observable<T>): Observable<[Observable<T>, Observable<S[]>]> => of([
+    new Observable<T>((observer) => stream$.subscribe({
       next: (data) => {
         const seen = selector(data)
         if (Array.isArray(seen)) {
-          seen.forEach((item) => missing.delete(item))
+          seen.forEach(missing.delete.bind(missing))
         } else {
           missing.delete(seen)
         }
         observer.next(data)
       },
-      error: (err) => {
-        observer.error(err)
-        missing$.error(err)
-      },
+      error: (err) => observer.error(err),
       complete: () => {
-        projectMissing(Array.from(missing)).forEach(missing$.next.bind(missing$))
         observer.complete()
+        missing$.next(Array.from(missing))
         missing$.complete()
       },
-    }))),
-    missing$
-  )
+    })),
+    missing$,
+  ])
 }

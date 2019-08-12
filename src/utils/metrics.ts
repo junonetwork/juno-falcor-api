@@ -2,7 +2,8 @@ import { Observable } from 'rxjs'
 import { finalize } from 'rxjs/operators'
 
 
-export type MetricEvent = { type: 'start', t: number } |
+export type MetricEvent =
+  { type: 'start', t: number } |
   { type: 'event', name: string, meta: any }
 
 export type MetricHandlers<T> = {

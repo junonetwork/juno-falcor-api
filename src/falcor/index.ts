@@ -10,7 +10,7 @@ import { metrics, MetricEvent, logger, instrument, event } from '../utils/metric
 import { batch, bufferSynchronous } from '../utils/juno'
 import { COUNTRIES } from './countries'
 import { resourceFieldValueFromMemory, resourceFieldLengthFromMemory, resourceLabelFromMemory } from '../utils/memoryStore'
-import { $ref } from '../utils/falcor';
+import { $ref } from '../utils/falcor'
 
 
 type IFalcorRouter = {

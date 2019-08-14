@@ -6,11 +6,11 @@ import { ranges2List, $atom, $ref } from '../utils/falcor'
 import { resourceFieldValuePath, resourceFieldLengthPath, resourceLabelPath } from '../utils/juno'
 
 
-export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], resources: string[], fields: string[], ranges: StandardRange[] }
-export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], resources: string[], fields: string[] }
-export type ResourceLabelRequest = { type: 'resource-label', resourceTypes: string[], resources: string[] }
+export type ResourceValueRequest = { type: 'resource', resourceTypes: string[], ids: string[], fields: string[], ranges: StandardRange[] }
+export type ResourceCountRequest = { type: 'resource-count', resourceTypes: string[], ids: string[], fields: string[] }
+export type ResourceLabelRequest = { type: 'resource-label', resourceTypes: string[], ids: string[] }
 export type ResourceRequest = ResourceValueRequest | ResourceCountRequest | ResourceLabelRequest
-export type ResourceRequestByType = { resources: string[], fields: string[], ranges: StandardRange[], count: boolean, label: boolean }
+export type ResourceRequestByType = { ids: string[], fields: string[], ranges: StandardRange[], count: boolean, label: boolean }
 export type MergedResourceRequest = { [resourceType: string]: ResourceRequestByType }
 
 
@@ -20,13 +20,13 @@ export const mergeResourceRequests = reduce<ResourceRequest, MergedResourceReque
       return over(lensProp(resourceType), (requestsByType: ResourceRequestByType | undefined) => {
         return pipe(
           defaultTo({
-            resources: [],
+            ids: [],
             fields: [],
             ranges: [],
             count: false,
             label: false,
           }),
-          over(lensProp('resources'), (resources) => uniq(concat(req.resources, resources))),
+          over(lensProp('ids'), (ids) => uniq(concat(req.ids, ids))),
           over(lensProp('fields'), (fields) => req.type !== 'resource-label' ? uniq(concat(req.fields, fields)) : fields),
           (requestsByType) => {
             if (req.type === 'resource') {
@@ -49,43 +49,43 @@ export const mergeResourceRequests = reduce<ResourceRequest, MergedResourceReque
 
 export default (request: MergedResourceRequest): Observable<PathValue | PathValue[]> => from(Object.keys(request)).pipe(
   mergeMap((type) => {
-    return from(request[type].resources).pipe(
-      filter((resource) => resource !== 'nonexistant'),
-      map((resource) => {
+    return from(request[type].ids).pipe(
+      filter((id) => id !== 'nonexistant'),
+      map((id) => {
         const pathValues: PathValue[] = []
 
         if (request[type].label) {
           pathValues.push({
-            path: resourceLabelPath('juno', type, resource),
-            value: `${type} ${resource}`,
+            path: resourceLabelPath('juno', type, id),
+            value: `${type} ${id}`,
           })
         }
 
         request[type].fields.forEach((field) => {
           if (request[type].count) {
             pathValues.push({
-              path: resourceFieldLengthPath('juno', type, resource, field),
+              path: resourceFieldLengthPath('juno', type, id, field),
               value: field === 'shareholderOf' ? 5 : 1,
             })
           }
 
           pathValues.push(...(field === 'birthDate' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, resource, 'birthDate', index),
+              path: resourceFieldValuePath('juno', type, id, 'birthDate', index),
               value: index === 0 ? $atom(`1980-10-10`, { dataType: 'date' }) : null,
             })) :
           field === 'shareholderOf' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, resource, 'shareholderOf', index),
+              path: resourceFieldValuePath('juno', type, id, 'shareholderOf', index),
               value: index < 5 ? $ref(['juno', 'resource', 'company', `_${index}:shareholder`]) : null,
             })) :
           field === 'nationality' ?
             ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, resource, 'nationality', index),
+              path: resourceFieldValuePath('juno', type, id, 'nationality', index),
               value: index === 0 ? $ref(['juno', 'resource', 'country', 'gbr']) : null,
             })) :
             ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, resource, field, index),
+              path: resourceFieldValuePath('juno', type, id, field, index),
               value: $atom(`${field} value ${index}`),
             }))
           ))

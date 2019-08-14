@@ -40,53 +40,53 @@ export const searchResultPath = (graph: string, search: string, index: number) =
  */
 export const searchResultQualifierPath = (graph: string, search: string, index: number) => [graph, 'search', search, index, 'qualifier']
 /**
- * [graph, "resource", type, resource]
+ * [graph, "resource", type, id]
  * 
  * ["juno", "resource", "person", "_1"]
  */
-export const resourcePath = (graph: string, type: string, resource: string) => [graph, 'resource', type, resource]
+export const resourcePath = (graph: string, type: string, id: string) => [graph, 'resource', type, id]
 /**
- * [graph, "resource", type, resource, field]
+ * [graph, "resource", type, id, field]
  * 
  * ["juno", "resource", "person", "_1", "name"]
  */
-export const resourceFieldPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field]
+export const resourceFieldPath = (graph: string, type: string, id: string, field: string) => [graph, 'resource', type, id, field]
 /**
- * [graph, "resource", type, resource, field, index, "value"]
+ * [graph, "resource", type, id, field, index, "value"]
  * 
  * ["juno", "resource", "person", "_1", "name", 0, "value"]
  */
-export const resourceFieldValuePath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'value']
+export const resourceFieldValuePath = (graph: string, type: string, id: string, field: string, index: number) => [graph, 'resource', type, id, field, index, 'value']
 /**
- * [graph, "resource", type, resource, field, index, "qualifier"]
+ * [graph, "resource", type, id, field, index, "qualifier"]
  * 
  * ["juno", "resource", "person", "_1", "name", 0, "qualifier"]
  */
-export const resourceFieldValueQualifierPath = (graph: string, type: string, resource: string, field: string, index: number) => [graph, 'resource', type, resource, field, index, 'qualifier']
+export const resourceFieldValueQualifierPath = (graph: string, type: string, id: string, field: string, index: number) => [graph, 'resource', type, id, field, index, 'qualifier']
 /**
- * [graph, "resource", type, resource, field, "length"]
+ * [graph, "resource", type, id, field, "length"]
  * 
  * ["juno", "resource", "person", "_1", "name", "length"]
  */
-export const resourceFieldLengthPath = (graph: string, type: string, resource: string, field: string) => [graph, 'resource', type, resource, field, 'length']
+export const resourceFieldLengthPath = (graph: string, type: string, id: string, field: string) => [graph, 'resource', type, id, field, 'length']
 /**
- * [graph, "resource", type, resource, "label"]
+ * [graph, "resource", type, id, "label"]
  * 
  * ["juno", "resource", "person", "_1", "label"]
  */
-export const resourceLabelPath = (graph: string, type: string, resource: string) => [graph, 'resource', type, resource, 'label']
+export const resourceLabelPath = (graph: string, type: string, id: string) => [graph, 'resource', type, id, 'label']
 /**
- * [graph, "filter", type, query, index]
+ * [graph, "filter", type, filter, index]
  * 
  * ["juno", "filter", "country", "russ", 0]
  */
-export const resourceFilterPath = (graph: string, type: string, query: string, index: number) => [graph, 'filter', type, query, index]
+export const resourceFilterPath = (graph: string, type: string, filter: string, index: number) => [graph, 'filter', type, filter, index]
 /**
- * [graph, "filter", type, query, "length"]
+ * [graph, "filter", type, filter, "length"]
  * 
  * ["juno", "filter", "country", "russ", "length"]
  */
-export const resourceFilterLengthPath = (graph: string, type: string, query: string) => [graph, 'filter', type, query, "length"]
+export const resourceFilterLengthPath = (graph: string, type: string, filter: string) => [graph, 'filter', type, filter, "length"]
 
 
 export const batch = <Request, Merged>(

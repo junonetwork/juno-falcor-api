@@ -47,27 +47,27 @@ const BaseRouter = Router.createClass([
    */
   {
     route: 'juno.resource[{keys}][{keys}][{keys}][{ranges}]["value", "qualifier"]',
-    get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields, ranges]: [string, string, string[], string[], string[], StandardRange[]]) {
-      return this.resource({ type: 'resource', resourceTypes, resources, fields, ranges }).pipe(logError(), bufferSynchronous())
+    get(this: IFalcorRouter, [_, __, resourceTypes, ids, fields, ranges]: [string, string, string[], string[], string[], StandardRange[]]) {
+      return this.resource({ type: 'resource', resourceTypes, ids, fields, ranges }).pipe(logError(), bufferSynchronous())
     },
   },
   {
     route: 'juno.resource[{keys}][{keys}][{keys}].length',
-    get(this: IFalcorRouter, [_, __, resourceTypes, resources, fields]: [string, string, string[], string[], string[]]) {
-      return this.resource({ type: 'resource-count', resourceTypes, resources, fields }).pipe(logError(), bufferSynchronous())
+    get(this: IFalcorRouter, [_, __, resourceTypes, ids, fields]: [string, string, string[], string[], string[]]) {
+      return this.resource({ type: 'resource-count', resourceTypes, ids, fields }).pipe(logError(), bufferSynchronous())
     },
   },
   {
     route: 'juno.resource[{keys}][{keys}].label',
-    get(this: IFalcorRouter, [_, __, resourceTypes, resources]: [string, string, string[], string[]]) {
-      return this.resource({ type: 'resource-label', resourceTypes, resources }).pipe(logError(), bufferSynchronous())
+    get(this: IFalcorRouter, [_, __, resourceTypes, ids]: [string, string, string[], string[]]) {
+      return this.resource({ type: 'resource-label', resourceTypes, ids }).pipe(logError(), bufferSynchronous())
     },
   },
   {
     // route can be auto generated
     route: 'juno.resource[{keys}][{keys}].type',
-    get([_, __, resourceTypes, resources]: [string, string, string[], string[]]) {
-      return from(xprod(resourceTypes, resources)).pipe(
+    get([_, __, resourceTypes, ids]: [string, string, string[], string[]]) {
+      return from(xprod(resourceTypes, ids)).pipe(
         map(([type, id]) => ({
           path: ['juno', 'resource', type, id, 'type'],
           value: $ref(['juno', 'resource', 'type', type]),
@@ -78,8 +78,8 @@ const BaseRouter = Router.createClass([
   {
     // route can be auto generated
     route: 'juno.resource[{keys}][{keys}].id',
-    get([_, __, resourceTypes, resources]: [string, string, string[], string[]]) {
-      return from(xprod(resourceTypes, resources)).pipe(
+    get([_, __, resourceTypes, ids]: [string, string, string[], string[]]) {
+      return from(xprod(resourceTypes, ids)).pipe(
         map(([type, id]) => ({
           path: ['juno', 'resource', type, id, 'id'],
           value: id,

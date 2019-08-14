@@ -1,7 +1,7 @@
 import { xprod as ramda_xprod } from 'ramda'
 import { PathValue } from 'falcor-router';
-import { Observable, Subject, ReplaySubject, concat, merge, GroupedObservable, of } from 'rxjs'
-import { toArray, mergeMap, multicast, refCount, delay, tap } from 'rxjs/operators'
+import { Observable, Subject, ReplaySubject, of } from 'rxjs'
+import { toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
 
 
 export const noop = () => {}
@@ -75,6 +75,18 @@ export const resourceFieldLengthPath = (graph: string, type: string, resource: s
  * ["juno", "resource", "person", "_1", "label"]
  */
 export const resourceLabelPath = (graph: string, type: string, resource: string) => [graph, 'resource', type, resource, 'label']
+/**
+ * [graph, "filter", type, query, index]
+ * 
+ * ["juno", "filter", "country", "russ", 0]
+ */
+export const resourceFilterPath = (graph: string, type: string, query: string, index: number) => [graph, 'filter', type, query, index]
+/**
+ * [graph, "filter", type, query, "length"]
+ * 
+ * ["juno", "filter", "country", "russ", "length"]
+ */
+export const resourceFilterLengthPath = (graph: string, type: string, query: string) => [graph, 'filter', type, query, "length"]
 
 
 export const batch = <Request, Merged>(
@@ -104,11 +116,11 @@ export const batch = <Request, Merged>(
         refCount(),
       )
 
-      setTimeout(() => {
+      setImmediate(() => {
         request$!.complete()
         request$ = undefined
         response$ = undefined
-      }, 0)
+      })
     }
 
     request$.next(req)
@@ -178,7 +190,7 @@ export const bufferSynchronous = () => {
 }
 
 
-export const padMissingStatic = <T, S = any>(
+export const padByStatic = <T, S>(
   stream$: Observable<T>,
   expected: S[],
   selector: (data: T) => S,

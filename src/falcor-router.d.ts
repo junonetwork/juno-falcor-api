@@ -52,31 +52,31 @@ declare module 'falcor-router' {
     public routeUnhandledPathsTo(dataSource: DataSource): void;
     
     // static createClass(routes?: Array<Route>): typeof Router;
-    static createClass<T = Route>(routes: T[]): typeof Router
+    static createClass<T extends Route = Route>(routes: T[]): typeof Router
   }
 
   export class Router extends AbstractRouter {
     constructor(options?: RouterOptions);
   }
 
-  export type GetRoute<P extends PathSet = PathSet, C = Router> = {
+  export type GetRoute<P extends PathSet = PathSet> = {
     route: string
-    get(this: C, pathset: P): PathValue | PathValue[] | Promise<PathValue | PathValue[]> | Observable<PathValue | PathValue[]>
+    get(pathset: P): PathValue | PathValue[] | Promise<PathValue | PathValue[]> | Observable<PathValue | PathValue[]>
   }
 
-  export type SetRoute<C = Router> = {
+  export type SetRoute = {
     route: string
-    set(this: C, jsonGraph: JSONGraph): PathValue | PathValue[] | Promise<PathValue | PathValue[]> | Observable<PathValue | PathValue[]>
+    set(jsonGraph: JSONGraph): PathValue | PathValue[] | Promise<PathValue | PathValue[]> | Observable<PathValue | PathValue[]>
   }
 
-  export type CallRoute<P extends PathSet = PathSet, C = Router> = {
+  export type CallRoute<P extends PathSet = PathSet> = {
     route: string
-    call(this: C, callPath: P, args: Array<any>): CallRouteResult | Promise<CallRouteResult> | Observable<CallRouteResult>
+    call(callPath: P, args: Array<any>): CallRouteResult | Promise<CallRouteResult> | Observable<CallRouteResult>
   }
 
   export type CallRouteResult = PathValue | InvalidPath | Array<PathValue | InvalidPath> | JSONGraphEnvelope;
 
-  export type Route<P extends PathSet = PathSet, C = Router> = GetRoute<P, C> | SetRoute<C> | CallRoute<P, C>;
+  export type Route<P extends PathSet = PathSet> = GetRoute<P> | SetRoute | CallRoute<P>;
 
   export type Primitive = string | boolean | number | undefined | null;
 

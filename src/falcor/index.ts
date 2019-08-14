@@ -9,7 +9,7 @@ import { logError } from '../utils/rxjs'
 import { metrics, MetricEvent, logger, instrument, event } from '../utils/metrics'
 import { batch, bufferSynchronous } from '../utils/juno'
 import { $ref } from '../utils/falcor'
-import { staticResourceRoutes } from '../utils/staticResources';
+import { staticResourceRoutes } from '../utils/staticResources'
 
 
 type IFalcorRouter = {

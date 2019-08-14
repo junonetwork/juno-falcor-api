@@ -72,22 +72,22 @@ export default (request: MergedResourceRequest): Observable<PathValue | PathValu
           pathValues.push(...(field === 'birthDate' ?
             ranges2List(request[type].ranges).map((index) => ({
               path: resourceFieldValuePath('juno', type, id, 'birthDate', index),
-              value: index === 0 ? $atom(`1980-10-10`, { dataType: 'date' }) : null,
+              value: index === 0 ? $atom('1980-10-10', { dataType: 'date' }) : null,
             })) :
-          field === 'shareholderOf' ?
-            ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, id, 'shareholderOf', index),
-              value: index < 5 ? $ref(['juno', 'resource', 'company', `_${index}:shareholder`]) : null,
-            })) :
-          field === 'nationality' ?
-            ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, id, 'nationality', index),
-              value: index === 0 ? $ref(['juno', 'resource', 'country', 'gbr']) : null,
-            })) :
-            ranges2List(request[type].ranges).map((index) => ({
-              path: resourceFieldValuePath('juno', type, id, field, index),
-              value: $atom(`${field} value ${index}`),
-            }))
+            field === 'shareholderOf' ?
+              ranges2List(request[type].ranges).map((index) => ({
+                path: resourceFieldValuePath('juno', type, id, 'shareholderOf', index),
+                value: index < 5 ? $ref(['juno', 'resource', 'company', `_${index}:shareholder`]) : null,
+              })) :
+              field === 'nationality' ?
+                ranges2List(request[type].ranges).map((index) => ({
+                  path: resourceFieldValuePath('juno', type, id, 'nationality', index),
+                  value: index === 0 ? $ref(['juno', 'resource', 'country', 'gbr']) : null,
+                })) :
+                ranges2List(request[type].ranges).map((index) => ({
+                  path: resourceFieldValuePath('juno', type, id, field, index),
+                  value: $atom(`${field} value ${index}`),
+                }))
           ))
         })
 

@@ -1,7 +1,7 @@
 import {
   range,
 } from 'ramda'
-import { StandardRange, Atom, Ref, ErrorSentinel, Sentinel } from 'falcor-router'
+import { StandardRange, Atom, Ref, ErrorSentinel } from 'falcor-router'
 
 
 /**
@@ -17,7 +17,7 @@ export const ranges2List = (ranges: StandardRange[]): number[] => ranges.reduce<
   []
 )
 
-export const $atom = (value: any, { dataType, language }: { dataType?: string, language?: string } = {}): Atom => {
+export const $atom = <T>(value: T, { dataType, language }: { dataType?: string, language?: string } = {}): Atom => {
   const atom: Atom = { $type: 'atom', value }
 
   if (dataType && dataType !== 'string') {
@@ -32,5 +32,3 @@ export const $atom = (value: any, { dataType, language }: { dataType?: string, l
 }
 export const $ref = (value: Array<string | number>): Ref => ({ $type: 'ref', value })
 export const $error = (code: string, message: string): ErrorSentinel => ({ $type: 'error', value: { code, message } })
-
-export const isSentinel = (x: any): x is Sentinel => x !== undefined && (x.$type === 'atom' || x.$type === 'ref' || x.$type === 'error')

@@ -7,7 +7,8 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "build:tests": "tsc --project tsconfig-test.json",
-    "test": "npm run build:tests && NODE_ENV=test node test_dist/test/ | tap-summary"
+    "test": "npm run build:tests && NODE_ENV=test node test_dist/test/ | tap-summary",
+    "lint": "eslint src/**/*.ts"
   },
   "author": "",
   "license": "ISC",
@@ -26,6 +27,9 @@
     "@types/query-string": "^6.3.0",
     "@types/ramda": "^0.26.8",
     "@types/tape": "^4.2.33",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "eslint": "^6.1.0",
     "nodemon": "^1.19.1",
     "tap-summary": "^4.0.0",
     "tape": "^4.10.1",

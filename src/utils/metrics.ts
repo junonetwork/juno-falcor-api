@@ -2,9 +2,9 @@ import { Observable } from 'rxjs'
 import { finalize } from 'rxjs/operators'
 
 
-export type MetricEvent =
+export type MetricEvent<T = undefined> =
   { type: 'start', t: number } |
-  { type: 'event', name: string, meta: any }
+  { type: 'event', name: string, meta: T }
 
 export type MetricHandlers<T> = {
   event: (event: T) => void
@@ -13,7 +13,7 @@ export type MetricHandlers<T> = {
 
 export const start = () => ({ type: 'start' as 'start', t: Date.now() })
 
-export const event = (name: string, meta?: any) => ({ type: 'event' as 'event', name, meta })
+export const event = <T>(name: string, meta?: T) => ({ type: 'event' as 'event', name, meta })
 
 export const logger = (events: MetricEvent[]) => {
   const start = events.find((event): event is { type: 'start', t: number } => event.type === 'start')

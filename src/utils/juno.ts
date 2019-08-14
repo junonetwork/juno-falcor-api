@@ -1,5 +1,5 @@
-import { xprod as ramda_xprod } from 'ramda'
-import { PathValue } from 'falcor-router';
+import { xprod as ramdaXprod } from 'ramda'
+import { PathValue } from 'falcor-router'
 import { Observable, Subject, ReplaySubject, of } from 'rxjs'
 import { toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
 
@@ -7,7 +7,7 @@ import { toArray, mergeMap, multicast, refCount, delay } from 'rxjs/operators'
 export const noop = () => {}
 
 
-export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramda_xprod(ax, bx)
+export const xprod = <A, B, C>(ax: A[], bx: B[], cx: C[]) => ramdaXprod(ax, bx)
   .reduce<Array<[A, B, C]>>((acc, abProd) => {
     const abcProd = cx.map((c) => [...abProd, c] as [A, B, C])
     acc.push(...abcProd)
@@ -86,7 +86,7 @@ export const resourceFilterPath = (graph: string, type: string, filter: string, 
  * 
  * ["juno", "filter", "country", "russ", "length"]
  */
-export const resourceFilterLengthPath = (graph: string, type: string, filter: string) => [graph, 'filter', type, filter, "length"]
+export const resourceFilterLengthPath = (graph: string, type: string, filter: string) => [graph, 'filter', type, filter, 'length']
 
 
 export const batch = <Request, Merged>(

@@ -4,7 +4,7 @@ import { PathValue, StandardRange } from 'falcor-router'
 import { pipe, map, groupBy, values, any, propEq, uniq, prop } from 'ramda'
 import { $error, ranges2List, $ref } from '../utils/falcor'
 import { parseSearch } from '../utils/search'
-import { searchPath, searchResultPath, searchLengthPath, padBy, } from '../utils/juno';
+import { searchPath, searchResultPath, searchLengthPath, padBy, } from '../utils/juno'
 
 
 export type SearchRequest = { type: 'search', search: string, ranges: StandardRange[] }

@@ -155,17 +155,19 @@ export const batch = <Request, Merged>(
 
 export const bufferSynchronous = () => {
   let interval: NodeJS.Immediate
-  let buffer: PathValue[]
+  let buffer: PathValue[] | undefined
 
-  return (stream$: Observable<PathValue | PathValue[]>): Observable<PathValue[]> => {
-    return new Observable((observer) => {
-      return stream$.subscribe({
+  return (
+    stream$: Observable<PathValue | PathValue[]>
+  ): Observable<PathValue[]> => (
+    new Observable((observer) => (
+      stream$.subscribe({
         next: (data) => {
           if (buffer === undefined) {
             buffer = []
             interval = setImmediate(() => { // should this be implemented via process.nextTick?
               observer.next(buffer)
-              buffer = []
+              buffer = undefined
             })
           }
 
@@ -179,14 +181,15 @@ export const bufferSynchronous = () => {
         complete: () => {
           if (buffer !== undefined) {
             observer.next(buffer)
+            buffer = undefined
             clearImmediate(interval)
           }
 
           observer.complete()
         },
       })
-    })
-  }
+    ))
+  )
 }
 
 

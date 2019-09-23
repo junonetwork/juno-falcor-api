@@ -62,6 +62,15 @@ export const STATIC_RESOURCES: StaticResourcesByType = {
       range: [$ref(['juno', 'resource', 'type', 'country'])],
     }
   },
+  attribute: {
+    name: $ref(['juno', 'resource', 'field', 'name']),
+    birthDate: $ref(['juno', 'resource', 'field', 'birthDate']),
+    nationality: $ref(['juno', 'resource', 'field', 'nationality']),
+  },
+  relationship: {
+    shareholderOf: $ref(['juno', 'resource', 'field', 'shareholderOf']),
+    hasShareholder: $ref(['juno', 'resource', 'field', 'hasShareholder']),
+  },
   country: {
     gbr: {
       label: [$atom('United Kingdom')],

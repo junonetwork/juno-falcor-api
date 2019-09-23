@@ -67,24 +67,20 @@ const BaseRouter = Router.createClass([
     // route can be auto generated
     route: 'juno.resource[{keys}][{keys}].type',
     get([_, __, resourceTypes, ids]: [string, string, string[], string[]]) {
-      return from(xprod(resourceTypes, ids)).pipe(
-        map(([type, id]) => ({
-          path: ['juno', 'resource', type, id, 'type'],
-          value: $ref(['juno', 'resource', 'type', type]),
-        }))
-      )
+      return xprod(resourceTypes, ids).map(([type, id]) => ({
+        path: ['juno', 'resource', type, id, 'type'],
+        value: $ref(['juno', 'resource', 'type', type]),
+      }))
     },
   },
   {
     // route can be auto generated
     route: 'juno.resource[{keys}][{keys}].id',
     get([_, __, resourceTypes, ids]: [string, string, string[], string[]]) {
-      return from(xprod(resourceTypes, ids)).pipe(
-        map(([type, id]) => ({
-          path: ['juno', 'resource', type, id, 'id'],
-          value: id,
-        }))
-      )
+      return xprod(resourceTypes, ids).map(([type, id]) => ({
+        path: ['juno', 'resource', type, id, 'id'],
+        value: id,
+      }))
     },
   },
   /**

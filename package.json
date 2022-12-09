@@ -13,7 +13,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.16.4",
+    "express": "^4.18.2",
     "falcor-express": "^0.1.4",
     "falcor-json-graph": "^3.1.0",
     "falcor-router": "^0.8.3",
